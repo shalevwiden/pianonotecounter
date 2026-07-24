@@ -1,0 +1,7 @@
+.DS_Store
+.sass-cache/
+*.css.map
+scripts/_*.mid
+__pycache__/
+*.pyc
+.venv/

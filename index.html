@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Piano Session Recorder</title>
+    <meta
+      name="description"
+      content="Record piano performances over USB MIDI and export standard .mid files."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=JetBrains+Mono:wght@400;500&family=Outfit:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/main.css" />
+  </head>
+  <body>
+    <div class="app">
+      <div class="app__noise" aria-hidden="true"></div>
+      <div class="app__glow" aria-hidden="true"></div>
+
+      <header class="header">
+        <div class="header__brand">
+          <div class="header__mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M5 4h2.2v11.2a2.8 2.8 0 1 1-2.2-2.74V4zm6 0h2.2v8.2a2.8 2.8 0 1 1-2.2-2.74V4zm6 0h2.2v5.2a2.8 2.8 0 1 1-2.2-2.74V4z"
+              />
+            </svg>
+          </div>
+          <div>
+            <div class="header__title">Piano Session Recorder</div>
+            <div class="header__subtitle">USB MIDI · Live count · .mid export</div>
+          </div>
+        </div>
+
+        <div class="header__actions">
+          <button
+            class="theme-toggle"
+            id="themeToggle"
+            type="button"
+            aria-label="Toggle theme"
+            title="Toggle theme"
+          >
+            <svg class="icon-moon" viewBox="0 0 24 24">
+              <path d="M21 14.5A8.5 8.5 0 1 1 9.5 3 7 7 0 0 0 21 14.5z" />
+            </svg>
+            <svg class="icon-sun" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="4" />
+              <path
+                d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"
+              />
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <main class="main">
+        <div class="status-bar">
+          <div class="status-bar__pill">
+            <span class="status-bar__dot" id="midiDot"></span>
+            <span id="midiStatus">Waiting for MIDI…</span>
+          </div>
+          <select
+            class="status-bar__device"
+            id="deviceSelect"
+            aria-label="MIDI input device"
+            disabled
+          >
+            <option value="">No devices</option>
+          </select>
+          <div class="status-bar__pill" id="recordingPill" hidden>
+            <span class="status-bar__dot status-bar__dot--recording"></span>
+            <span>Recording</span>
+          </div>
+        </div>
+
+        <section class="hero-counter" aria-live="polite">
+          <div class="hero-counter__label">Notes Played</div>
+          <div class="hero-counter__value" id="noteCount">0</div>
+          <p class="hero-counter__hint" id="heroHint">
+            Connect your Yamaha P-145BT, then press Record and play.
+          </p>
+        </section>
+
+        <section class="stats" aria-label="Session statistics">
+          <article class="stat-card">
+            <div class="stat-card__label">Total Notes</div>
+            <div class="stat-card__value" id="statTotal">0</div>
+          </article>
+          <article class="stat-card">
+            <div class="stat-card__label">Notes / Sec</div>
+            <div class="stat-card__value">
+              <span id="statNps">0.0</span
+              ><span class="stat-card__unit">nps</span>
+            </div>
+          </article>
+          <article class="stat-card">
+            <div class="stat-card__label">Peak NPS</div>
+            <div class="stat-card__value">
+              <span id="statPeakNps">0.0</span
+              ><span class="stat-card__unit">nps</span>
+            </div>
+          </article>
+          <article class="stat-card">
+            <div class="stat-card__label">Elapsed</div>
+            <div class="stat-card__value" id="statElapsed">0:00.0</div>
+          </article>
+        </section>
+
+        <div class="controls">
+          <button class="btn btn--primary" id="btnRecord" type="button" disabled>
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <circle cx="8" cy="8" r="5" />
+            </svg>
+            Record
+          </button>
+          <button class="btn btn--danger" id="btnStop" type="button" disabled hidden>
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <rect x="4" y="4" width="8" height="8" rx="1.5" />
+            </svg>
+            Stop
+          </button>
+          <button class="btn btn--secondary" id="btnExport" type="button" disabled>
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <path
+                d="M8 2.5v7M5.5 7.5 8 10l2.5-2.5M3 12.5h10"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.6"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            Export .mid
+          </button>
+          <button class="btn btn--ghost" id="btnReset" type="button" disabled>
+            Reset
+          </button>
+        </div>
+      </main>
+
+      <footer class="footer">
+        <span>Web MIDI · Chromium recommended</span>
+        <span class="footer__mono" id="eventMeta">0 events · 0 bytes</span>
+      </footer>
+    </div>
+
+    <script type="module" src="js/app.js"></script>
+  </body>
+</html>
