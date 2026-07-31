@@ -1,121 +1,113 @@
 # Piano Session Recorder
 
-A polished web app for recording piano performances over USB MIDI. Built for YouTube sessions with a live note counter and accurate `.mid` export (Synthesia-friendly).
+A polished web app for recording piano performances. Play a USB MIDI instrument or your computer keyboard, watch a live note counter, and export a Standard MIDI File you can open in Synthesia.
 
-Works with keyboards like the **Yamaha P-145BT** via the Web MIDI API in Chrome or another Chromium-based browser.
+Tested with a **Yamaha P-145BT** over USB MIDI in Chrome.
 
 ## Requirements
 
-- macOS (or any OS with a modern Chromium browser)
-- [Python 3](https://www.python.org/) (for the local server)
-- [Sass](https://sass-lang.com/) (only if you edit styles)
-- Chrome, Edge, or another Chromium browser with Web MIDI support
-- A USB MIDI keyboard
+- [Python 3](https://www.python.org/) for the local server
+- [Sass](https://sass-lang.com/) only if you edit styles (`brew install sass/sass/sass`)
+- Chrome or Edge for Web MIDI (computer-keyboard input works in any modern browser)
 
 ## Quick start
-
-From the project root:
 
 ```bash
 python3 scripts/serve.py
 ```
 
-This starts a local server at [http://127.0.0.1:8765](http://127.0.0.1:8765) and opens it in your browser.
-
-Options:
+Serves the app at [http://127.0.0.1:8765](http://127.0.0.1:8765) and opens it. If that port is busy the script automatically moves to the next free one.
 
 ```bash
-python3 scripts/serve.py --port 9000      # custom port
-python3 scripts/serve.py --no-open       # don't auto-open the browser
+python3 scripts/serve.py --port 9000   # pick a port
+python3 scripts/serve.py --no-open     # don't launch a browser
 ```
 
-> Web MIDI needs a secure context. Serving over `http://127.0.0.1` is enough; opening `index.html` as a `file://` URL usually will not work.
+> Web MIDI requires a secure context. Serving over `localhost` satisfies this; opening `index.html` as a `file://` URL does not.
 
-## Using the app
+## Playing
 
-1. Plug in your keyboard over USB (e.g. Yamaha P-145BT).
-2. Open the app in Chrome/Edge and **allow MIDI access** when prompted.
-3. Confirm the correct device is selected in the device dropdown (Yamaha devices are preferred automatically).
-4. Click **Record**, then play.
-5. Click **Stop** when finished.
-6. Click **Export .mid** to download a Standard MIDI File.
+Choose an input source at the top of the dashboard.
 
-### Keyboard shortcuts
+A connected instrument **always** plays and records. The source toggle only decides whether the computer keyboard is live as well, so pick **MIDI Device** when you want typing to stay silent during a take.
 
-| Shortcut        | Action                 |
-| --------------- | ---------------------- |
-| `Space`         | Start / stop recording |
-| `⌘E` / `Ctrl+E` | Export `.mid`          |
+**MIDI Device** — plug the keyboard in over USB and allow MIDI access when prompted. Detected instruments appear in the dropdown, and Yamaha devices are preferred automatically.
 
-### Dashboard
+**Computer Keyboard** — the home row plays white keys starting at Middle C, and the row above holds the black keys in their natural gaps:
 
-- **Notes Played** — live total of Note On events (velocity &gt; 0)
-- **Total Notes** — same total in the stats row
-- **Notes / Sec** — rolling 1-second NPS
-- **Peak NPS** — highest NPS reached in the session
-- **Elapsed** — recording duration
+| Keys | Purpose |
+| --- | --- |
+| `A S D F G H J K L ; '` | White keys, C4 upward |
+| `W E T Y U O P` | Black keys |
+| `Z` / `X` | Octave down / up (arrow keys also work) |
+| `Space` | Start or stop recording |
+| `⌘E` / `Ctrl+E` | Export the session |
 
-Use the theme toggle in the header for dark or light mode.
+Multiple keys can be held at once, key repeat is ignored, and every note lights up the on-screen 88-key piano. Notes sound through a built-in synth, which can be muted with the Sound switch.
 
-## MIDI export
+## Recording and export
 
-Exports are **Standard MIDI File (SMF) Type 1**:
+1. Press **Record** (or `Space`).
+2. Play. The counter, notes per second, peak NPS, and elapsed time update live.
+3. Press **Stop**.
+4. Press **Export .mid**.
 
-- Tempo track at 120 BPM
-- Performance track with note, control change (e.g. sustain), and pitch-bend events
-- **480 PPQN** resolution
-- Timing taken from Web MIDI message timestamps so the file can open cleanly in **Synthesia** for a piano-roll visualization
+Exports are **SMF Format 1** at **480 PPQN** with a dedicated tempo track at 120 BPM. Notes still held when you stop are closed automatically, leading silence is trimmed so the roll starts on your first note, and system-realtime traffic such as active sensing is discarded.
+
+### Checking an exported file
+
+```bash
+python3 scripts/verify_midi.py ~/Downloads/piano-session-20260731-120000.mid --events 10
+```
+
+It reports the header, per-track note counts, tempo, and warns about notes left hanging. A file that plays correctly ends with `OK  N notes on, N notes off`.
+
+## Settings
+
+The gear icon opens a panel for note velocity, playback volume, and key mapping. Select any note, press the key you want, and the binding is saved. Preferences persist in local storage.
 
 ## Project structure
 
 ```
 piano-midi/
 ├── index.html
-├── css/main.css          # compiled styles
-├── scss/                 # source styles
+├── css/main.css              # compiled styles
+├── scss/                     # source styles
 ├── js/
-│   ├── app.js            # UI + session flow
-│   ├── midi.js           # Web MIDI device manager
-│   ├── recorder.js       # note counting + event capture
-│   └── midi-writer.js    # SMF .mid builder
+│   ├── app.js                # UI wiring and session flow
+│   ├── midi.js               # Web MIDI device manager
+│   ├── keyboard.js           # QWERTY piano mapping
+│   ├── synth.js              # WebAudio piano voice
+│   ├── piano-ui.js           # 88-key on-screen keyboard
+│   ├── recorder.js           # event capture and live stats
+│   ├── midi-writer.js        # Standard MIDI File builder
+│   └── note-utils.js         # shared note helpers
 └── scripts/
-    ├── serve.py          # local HTTP server
-    └── compile_scss.py   # SCSS → CSS
+    ├── serve.py              # local HTTP server
+    ├── compile_scss.py       # SCSS → CSS
+    └── verify_midi.py        # inspect an exported .mid
 ```
 
 ## Editing styles
 
-After changing files under `scss/`:
-
 ```bash
-python3 scripts/compile_scss.py
+python3 scripts/compile_scss.py            # one-off build
+python3 scripts/compile_scss.py --watch    # rebuild on change
 ```
-
-Watch mode:
-
-```bash
-python3 scripts/compile_scss.py --watch
-```
-
-Requires the `sass` CLI (`brew install sass/sass/sass` on macOS).
 
 ## Troubleshooting
 
-**“Web MIDI unavailable”**  
-Use Chrome or Edge. Firefox and Safari do not fully support Web MIDI for this use case.
+**Exports look empty**  
+Run `verify_midi.py` on the file. If it reports zero note-ons, the session had no notes. The dev server sends no-cache headers so code changes always take effect; if you are serving the app another way, hard-reload with `⌘⇧R` — browsers cache ES modules aggressively and a stale `midi-writer.js` can produce a malformed header.
 
-**“MIDI permission denied”**  
-Allow MIDI when the browser prompts you, then refresh. Check site settings if you previously blocked it.
+**"Web MIDI unavailable"**  
+Use Chrome or Edge. Safari and Firefox do not support Web MIDI here. Computer-keyboard input still works.
 
-**“No MIDI devices”**
+**"No MIDI devices"**  
+Confirm the keyboard is powered and connected over USB rather than Bluetooth only, then check that it appears in macOS **Audio MIDI Setup**. Try another cable or port, and reload the page.
 
-- Confirm the keyboard is powered and connected over USB (not only Bluetooth, unless your OS exposes it as MIDI).
-- Unplug/replug the cable.
-- Check macOS **Audio MIDI Setup** to see if the device appears.
-- Try another USB port/cable.
+**No sound**  
+Browsers keep audio locked until the page receives a real user gesture, and MIDI notes do not count as one — playing a connected instrument on a page you have never clicked leaves the audio context suspended. Click anywhere once and the sound starts; the app prompts you if it detects this. Also check that the Sound switch is on.
 
-**Notes aren’t counting**  
-Make sure **Record** is active. Counting and capture only run during a recording session.
-
-**Exported file feels wrong in Synthesia**  
-Import the `.mid` as a normal MIDI file. Timing assumes 120 BPM with 480 PPQN; note positions should still match your performance relative to when you pressed Record.
+**Notes are not counting**  
+Counting starts when a recording is active. Press **Record** first, and confirm the input source matches how you are playing.

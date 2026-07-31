@@ -1,7 +1,10 @@
 /**
- * Session recorder — stores MIDI events with high-resolution timestamps
- * relative to the recording start for accurate .mid export.
+ * Captures MIDI messages from any input source with timestamps relative to the
+ * moment recording started. Web MIDI timestamps and performance.now() share a
+ * timeline, so both sources can be mixed without drift.
  */
+
+const NPS_WINDOW_MS = 1000;
 
 export class SessionRecorder {
   constructor() {
@@ -14,7 +17,6 @@ export class SessionRecorder {
     this.noteCount = 0;
     this.startedAt = null;
     this.endedAt = null;
-    this.originMidiTs = null;
     this.recording = false;
     this.peakNps = 0;
   }
@@ -32,33 +34,25 @@ export class SessionRecorder {
   }
 
   /**
-   * @param {MIDIMessageEvent} message
+   * @param {Uint8Array|number[]} bytes raw MIDI message
+   * @param {number} [timeStampMs] performance.now()-based timestamp
    */
-  handleMessage(message) {
-    if (!this.recording || !message.data || message.data.length === 0) {
-      return null;
-    }
+  capture(bytes, timeStampMs) {
+    if (!this.recording || !bytes || bytes.length === 0) return null;
 
-    const data = new Uint8Array(message.data);
-    const status = data[0] & 0xf0;
-    const now = performance.now();
-    const wallMs = now - this.startedAt;
-    const midiTs =
-      typeof message.timeStamp === "number" ? message.timeStamp : now;
+    const status = bytes[0] & 0xf0;
+    // System realtime (clock, active sensing) arrives constantly and carries no
+    // performance information.
+    if (bytes[0] >= 0xf0) return null;
 
-    if (this.originMidiTs == null) {
-      this.originMidiTs = midiTs;
-    }
+    const at = typeof timeStampMs === "number" ? timeStampMs : performance.now();
+    const timeMs = Math.max(0, at - this.startedAt);
+    this.events.push({ timeMs, data: Uint8Array.from(bytes) });
 
-    const timeMs = Math.max(0, midiTs - this.originMidiTs);
-
-    this.events.push({ timeMs, data, wallMs });
-
-    // Note On with velocity > 0 (velocity 0 is Note Off)
-    if (status === 0x90 && data.length >= 3 && data[2] > 0) {
+    if (status === 0x90 && bytes.length >= 3 && bytes[2] > 0) {
       this.noteCount += 1;
-      this.noteOnTimes.push(wallMs);
-      this._updatePeakNps(wallMs);
+      this.noteOnTimes.push(timeMs);
+      this._updatePeakNps(timeMs);
       return { isNoteOn: true, noteCount: this.noteCount };
     }
 
@@ -66,7 +60,7 @@ export class SessionRecorder {
   }
 
   _updatePeakNps(nowMs) {
-    const cutoff = nowMs - 1000;
+    const cutoff = nowMs - NPS_WINDOW_MS;
     while (this.noteOnTimes.length && this.noteOnTimes[0] < cutoff) {
       this.noteOnTimes.shift();
     }
@@ -75,15 +69,9 @@ export class SessionRecorder {
     }
   }
 
-  /** Live NPS over a rolling 1-second window. */
   getLiveNps() {
     if (this.startedAt == null) return 0;
-
-    const now = this.recording
-      ? performance.now() - this.startedAt
-      : Math.max(0, (this.endedAt ?? this.startedAt) - this.startedAt);
-
-    const cutoff = now - 1000;
+    const cutoff = this.getElapsedMs() - NPS_WINDOW_MS;
     let count = 0;
     for (let i = this.noteOnTimes.length - 1; i >= 0; i--) {
       if (this.noteOnTimes[i] >= cutoff) count += 1;
@@ -98,7 +86,7 @@ export class SessionRecorder {
     return Math.max(0, (this.endedAt ?? this.startedAt) - this.startedAt);
   }
 
-  getByteEstimate() {
-    return this.events.reduce((sum, e) => sum + e.data.length, 0);
+  get hasData() {
+    return this.events.length > 0;
   }
 }

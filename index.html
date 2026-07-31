@@ -6,8 +6,10 @@
     <title>Piano Session Recorder</title>
     <meta
       name="description"
-      content="Record piano performances over USB MIDI and export standard .mid files."
+      content="Record piano performances over USB MIDI or your computer keyboard and export standard .mid files."
     />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <meta name="theme-color" content="#3b82f6" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -24,30 +26,57 @@
       <header class="header">
         <div class="header__brand">
           <div class="header__mark" aria-hidden="true">
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path
-                d="M5 4h2.2v11.2a2.8 2.8 0 1 1-2.2-2.74V4zm6 0h2.2v8.2a2.8 2.8 0 1 1-2.2-2.74V4zm6 0h2.2v5.2a2.8 2.8 0 1 1-2.2-2.74V4z"
-              />
+            <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+              <g class="mark-white">
+                <rect x="5" y="6.5" width="6.4" height="19" rx="1.5" />
+                <rect x="12.8" y="6.5" width="6.4" height="19" rx="1.5" />
+                <rect x="20.6" y="6.5" width="6.4" height="19" rx="1.5" />
+              </g>
+              <g class="mark-black">
+                <rect x="10" y="6.5" width="4.2" height="11.5" rx="1.3" />
+                <rect x="17.8" y="6.5" width="4.2" height="11.5" rx="1.3" />
+              </g>
             </svg>
           </div>
           <div>
             <div class="header__title">Piano Session Recorder</div>
-            <div class="header__subtitle">USB MIDI · Live count · .mid export</div>
+            <div class="header__subtitle">Live note counter · MIDI export</div>
           </div>
         </div>
 
+        <nav class="nav" aria-label="Views">
+          <button class="nav__item is-active" data-view="dashboard" type="button">
+            Dashboard
+          </button>
+          <button class="nav__item" data-view="about" type="button">About</button>
+        </nav>
+
         <div class="header__actions">
           <button
-            class="theme-toggle"
+            class="icon-btn"
+            id="btnSettings"
+            type="button"
+            aria-label="Settings"
+            title="Settings"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="3" />
+              <path
+                d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.14.63.7 1.09 1.35 1.09H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
+              />
+            </svg>
+          </button>
+          <button
+            class="icon-btn"
             id="themeToggle"
             type="button"
             aria-label="Toggle theme"
             title="Toggle theme"
           >
-            <svg class="icon-moon" viewBox="0 0 24 24">
+            <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true">
               <path d="M21 14.5A8.5 8.5 0 1 1 9.5 3 7 7 0 0 0 21 14.5z" />
             </svg>
-            <svg class="icon-sun" viewBox="0 0 24 24">
+            <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true">
               <circle cx="12" cy="12" r="4" />
               <path
                 d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"
@@ -57,12 +86,32 @@
         </div>
       </header>
 
-      <main class="main">
+      <main class="main" id="viewDashboard">
         <div class="status-bar">
+          <div class="segmented" role="group" aria-label="Input source">
+            <button
+              class="segmented__item"
+              data-source="midi"
+              type="button"
+              title="Instrument only — typing will not add notes"
+            >
+              MIDI Device
+            </button>
+            <button
+              class="segmented__item is-active"
+              data-source="keyboard"
+              type="button"
+              title="Play with QWERTY. A connected instrument still works."
+            >
+              Computer Keyboard
+            </button>
+          </div>
+
           <div class="status-bar__pill">
             <span class="status-bar__dot" id="midiDot"></span>
-            <span id="midiStatus">Waiting for MIDI…</span>
+            <span id="midiStatus">Checking MIDI…</span>
           </div>
+
           <select
             class="status-bar__device"
             id="deviceSelect"
@@ -71,7 +120,8 @@
           >
             <option value="">No devices</option>
           </select>
-          <div class="status-bar__pill" id="recordingPill" hidden>
+
+          <div class="status-bar__pill status-bar__pill--rec" id="recordingPill" hidden>
             <span class="status-bar__dot status-bar__dot--recording"></span>
             <span>Recording</span>
           </div>
@@ -81,7 +131,7 @@
           <div class="hero-counter__label">Notes Played</div>
           <div class="hero-counter__value" id="noteCount">0</div>
           <p class="hero-counter__hint" id="heroHint">
-            Connect your Yamaha P-145BT, then press Record and play.
+            Press Record, then play your keyboard.
           </p>
         </section>
 
@@ -93,15 +143,13 @@
           <article class="stat-card">
             <div class="stat-card__label">Notes / Sec</div>
             <div class="stat-card__value">
-              <span id="statNps">0.0</span
-              ><span class="stat-card__unit">nps</span>
+              <span id="statNps">0.0</span><span class="stat-card__unit">nps</span>
             </div>
           </article>
           <article class="stat-card">
             <div class="stat-card__label">Peak NPS</div>
             <div class="stat-card__value">
-              <span id="statPeakNps">0.0</span
-              ><span class="stat-card__unit">nps</span>
+              <span id="statPeakNps">0.0</span><span class="stat-card__unit">nps</span>
             </div>
           </article>
           <article class="stat-card">
@@ -111,13 +159,13 @@
         </section>
 
         <div class="controls">
-          <button class="btn btn--primary" id="btnRecord" type="button" disabled>
+          <button class="btn btn--primary" id="btnRecord" type="button">
             <svg viewBox="0 0 16 16" aria-hidden="true">
               <circle cx="8" cy="8" r="5" />
             </svg>
             Record
           </button>
-          <button class="btn btn--danger" id="btnStop" type="button" disabled hidden>
+          <button class="btn btn--danger" id="btnStop" type="button" hidden>
             <svg viewBox="0 0 16 16" aria-hidden="true">
               <rect x="4" y="4" width="8" height="8" rx="1.5" />
             </svg>
@@ -140,13 +188,183 @@
             Reset
           </button>
         </div>
+
+        <section class="piano-panel" aria-label="Keyboard">
+          <div class="piano-panel__bar">
+            <div class="now-playing">
+              <span class="now-playing__label">Now playing</span>
+              <span class="now-playing__value" id="nowPlaying">—</span>
+            </div>
+
+            <div class="octave">
+              <span class="octave__label">Octave</span>
+              <button class="octave__btn" id="btnOctaveDown" type="button" title="Z">
+                −
+              </button>
+              <span class="octave__value" id="octaveValue">C4</span>
+              <button class="octave__btn" id="btnOctaveUp" type="button" title="X">
+                +
+              </button>
+            </div>
+
+            <label class="switch">
+              <input type="checkbox" id="soundToggle" checked />
+              <span class="switch__track"><span class="switch__thumb"></span></span>
+              <span class="switch__text">Sound</span>
+            </label>
+          </div>
+
+          <div class="piano-scroller">
+            <div class="piano" id="piano"></div>
+          </div>
+
+          <p class="piano-panel__hint" id="pianoHint">
+            Home row <kbd>A</kbd>–<kbd>'</kbd> plays white keys, the row above plays
+            the black keys. <kbd>Z</kbd> / <kbd>X</kbd> shift octaves.
+          </p>
+        </section>
+      </main>
+
+      <main class="main main--doc" id="viewAbout" hidden>
+        <section class="doc">
+          <span class="doc__eyebrow">About</span>
+          <h1 class="doc__title">Record a performance, export a real MIDI file.</h1>
+          <p class="doc__lead">
+            Piano Session Recorder captures everything you play — over USB MIDI or
+            straight from your computer keyboard — counts every note live, and writes
+            a Standard MIDI File you can drop into Synthesia to generate a piano roll.
+          </p>
+
+          <div class="doc__grid">
+            <article class="doc-card">
+              <h2 class="doc-card__title">Two ways to play</h2>
+              <p>
+                Plug in a MIDI instrument such as the Yamaha P-145BT and it is
+                detected automatically — it always plays and records. The source
+                toggle decides whether the <strong>computer keyboard</strong> is also
+                live, so switch to <strong>MIDI Device</strong> when you want typing
+                to stay silent.
+              </p>
+            </article>
+
+            <article class="doc-card">
+              <h2 class="doc-card__title">Accurate export</h2>
+              <p>
+                Sessions are written as SMF Format 1 at 480 PPQN with a dedicated
+                tempo track. Held notes are closed automatically and leading silence
+                is trimmed so the roll starts on your first note.
+              </p>
+            </article>
+
+            <article class="doc-card">
+              <h2 class="doc-card__title">Built for capture</h2>
+              <p>
+                A large live counter, notes per second, peak NPS and elapsed time are
+                all sized for screen recording. Dark and light themes are included.
+              </p>
+            </article>
+
+            <article class="doc-card">
+              <h2 class="doc-card__title">Your mapping</h2>
+              <p>
+                The QWERTY layout follows the familiar Virtual Piano arrangement, and
+                every key can be rebound from the settings panel. Preferences persist
+                between sessions.
+              </p>
+            </article>
+          </div>
+
+          <h2 class="doc__section">Keyboard layout</h2>
+          <p class="doc__body">
+            The home row plays white keys left to right starting at Middle C, and the
+            row above holds the black keys in their natural gaps.
+          </p>
+          <div class="doc__keys">
+            <div><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><kbd>F</kbd><kbd>G</kbd><kbd>H</kbd><kbd>J</kbd><kbd>K</kbd><kbd>L</kbd><kbd>;</kbd><kbd>'</kbd><span>White keys</span></div>
+            <div><kbd>W</kbd><kbd>E</kbd><kbd>T</kbd><kbd>Y</kbd><kbd>U</kbd><kbd>O</kbd><kbd>P</kbd><span>Black keys</span></div>
+            <div><kbd>Z</kbd><kbd>X</kbd><span>Octave down / up (arrow keys work too)</span></div>
+            <div><kbd>Space</kbd><span>Start or stop recording</span></div>
+            <div><kbd>⌘</kbd><kbd>E</kbd><span>Export the session</span></div>
+          </div>
+
+          <h2 class="doc__section">Requirements</h2>
+          <p class="doc__body">
+            Web MIDI needs a Chromium-based browser such as Chrome or Edge, served
+            over <code>localhost</code> or HTTPS. Computer-keyboard input and audio
+            work everywhere.
+          </p>
+        </section>
       </main>
 
       <footer class="footer">
-        <span>Web MIDI · Chromium recommended</span>
-        <span class="footer__mono" id="eventMeta">0 events · 0 bytes</span>
+        <span id="footerSource">Computer keyboard</span>
+        <span class="footer__mono" id="eventMeta">0 events</span>
       </footer>
     </div>
+
+    <dialog class="modal" id="settingsModal">
+      <form method="dialog" class="modal__inner">
+        <header class="modal__head">
+          <h2 class="modal__title">Settings</h2>
+          <button class="icon-btn" value="cancel" aria-label="Close">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </header>
+
+        <div class="modal__body">
+          <section class="setting">
+            <div class="setting__row">
+              <div>
+                <div class="setting__title">Note velocity</div>
+                <div class="setting__desc">
+                  Velocity recorded for computer-keyboard notes.
+                </div>
+              </div>
+              <div class="setting__control">
+                <input
+                  type="range"
+                  id="velocityRange"
+                  min="20"
+                  max="127"
+                  value="100"
+                />
+                <span class="setting__value" id="velocityValue">100</span>
+              </div>
+            </div>
+
+            <div class="setting__row">
+              <div>
+                <div class="setting__title">Volume</div>
+                <div class="setting__desc">Playback level for the built-in piano.</div>
+              </div>
+              <div class="setting__control">
+                <input type="range" id="volumeRange" min="0" max="100" value="70" />
+                <span class="setting__value" id="volumeValue">70</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="setting">
+            <div class="setting__head">
+              <div>
+                <div class="setting__title">Key mapping</div>
+                <div class="setting__desc">
+                  Select a key, then press the key you want to use.
+                </div>
+              </div>
+              <button class="btn btn--ghost btn--sm" id="btnResetMapping" type="button">
+                Reset to default
+              </button>
+            </div>
+            <div class="keymap" id="keymapList"></div>
+          </section>
+        </div>
+      </form>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
     <script type="module" src="js/app.js"></script>
   </body>

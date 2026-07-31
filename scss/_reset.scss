@@ -22,10 +22,11 @@ button {
 
 button:disabled {
   cursor: not-allowed;
-  opacity: 0.45;
+  opacity: 0.4;
 }
 
-select {
+select,
+input {
   font: inherit;
   color: inherit;
 }
@@ -33,4 +34,13 @@ select {
 ul,
 ol {
   list-style: none;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }

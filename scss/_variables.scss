@@ -1,50 +1,82 @@
 :root,
 [data-theme="dark"] {
-  --bg: #050505;
-  --bg-elevated: #0c0c0c;
-  --surface: #121212;
-  --surface-hover: #1a1a1a;
-  --border: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.14);
-  --text: #f5f5f5;
-  --text-secondary: #a3a3a3;
-  --text-muted: #636363;
-  --accent: #3d8bfd;
-  --accent-soft: rgba(61, 139, 253, 0.15);
-  --accent-glow: rgba(61, 139, 253, 0.35);
-  --success: #34c759;
-  --success-soft: rgba(52, 199, 89, 0.15);
-  --danger: #ff453a;
-  --danger-soft: rgba(255, 69, 58, 0.15);
-  --recording: #ff453a;
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 32px rgba(0, 0, 0, 0.45);
-  --shadow-lg: 0 24px 64px rgba(0, 0, 0, 0.55);
-  --counter-glow: radial-gradient(ellipse at center, rgba(61, 139, 253, 0.12) 0%, transparent 65%);
+  --bg: #04060c;
+  --bg-elevated: #080c15;
+  --surface: #0b1019;
+  --surface-hover: #121a29;
+  --surface-sunken: #070a12;
+  --border: rgba(148, 176, 226, 0.12);
+  --border-strong: rgba(148, 176, 226, 0.24);
+  --text: #eef3fa;
+  --text-secondary: #93a3bd;
+  --text-muted: #5d6b85;
+
+  --accent: #3b82f6;
+  --accent-strong: #60a5fa;
+  --accent-deep: #1d4ed8;
+  --accent-soft: rgba(59, 130, 246, 0.16);
+  --accent-glow: rgba(59, 130, 246, 0.45);
+
+  --success: #34d399;
+  --success-soft: rgba(52, 211, 153, 0.16);
+  --danger: #f43f5e;
+  --danger-soft: rgba(244, 63, 94, 0.16);
+  --warn: #fbbf24;
+  --warn-soft: rgba(251, 191, 36, 0.16);
+
+  --key-white: linear-gradient(180deg, #f7fafc 0%, #dbe2ec 100%);
+  --key-white-edge: rgba(8, 14, 26, 0.35);
+  --key-black: linear-gradient(180deg, #1b2434 0%, #070b13 100%);
+  --key-text: #46536b;
+
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 10px 34px rgba(0, 0, 0, 0.42);
+  --shadow-lg: 0 28px 70px rgba(0, 0, 0, 0.6);
+  --glow: radial-gradient(
+    ellipse at center,
+    rgba(59, 130, 246, 0.18) 0%,
+    transparent 68%
+  );
   --noise-opacity: 0.035;
   color-scheme: dark;
 }
 
 [data-theme="light"] {
-  --bg: #f2f2f4;
-  --bg-elevated: #fafafa;
+  --bg: #f3f6fc;
+  --bg-elevated: #ffffff;
   --surface: #ffffff;
-  --surface-hover: #f5f5f7;
-  --border: rgba(0, 0, 0, 0.08);
-  --border-strong: rgba(0, 0, 0, 0.12);
-  --text: #111111;
-  --text-secondary: #6b6b6b;
-  --text-muted: #9a9a9a;
-  --accent: #0071e3;
-  --accent-soft: rgba(0, 113, 227, 0.1);
-  --accent-glow: rgba(0, 113, 227, 0.25);
-  --success: #248a3d;
-  --success-soft: rgba(36, 138, 61, 0.12);
-  --danger: #d70015;
-  --danger-soft: rgba(215, 0, 21, 0.1);
-  --recording: #d70015;
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 28px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.1);
-  --counter-glow: radial-gradient(ellipse at center, rgba(0, 113, 227, 0.08) 0%, transparent 65%);
+  --surface-hover: #eef3fc;
+  --surface-sunken: #e8eef8;
+  --border: rgba(15, 35, 75, 0.1);
+  --border-strong: rgba(15, 35, 75, 0.18);
+  --text: #0a1324;
+  --text-secondary: #4a5a75;
+  --text-muted: #8494ae;
+
+  --accent: #1d6ffd;
+  --accent-strong: #0b5ae0;
+  --accent-deep: #1147a6;
+  --accent-soft: rgba(29, 111, 253, 0.1);
+  --accent-glow: rgba(29, 111, 253, 0.28);
+
+  --success: #0f9d6d;
+  --success-soft: rgba(15, 157, 109, 0.12);
+  --danger: #e11d48;
+  --danger-soft: rgba(225, 29, 72, 0.1);
+  --warn: #d97706;
+  --warn-soft: rgba(217, 119, 6, 0.12);
+
+  --key-white: linear-gradient(180deg, #ffffff 0%, #eaeff7 100%);
+  --key-white-edge: rgba(15, 35, 75, 0.16);
+  --key-black: linear-gradient(180deg, #2b3648 0%, #131a26 100%);
+  --key-text: #7b8aa4;
+
+  --shadow: 0 1px 2px rgba(15, 35, 75, 0.05), 0 10px 30px rgba(15, 35, 75, 0.08);
+  --shadow-lg: 0 24px 56px rgba(15, 35, 75, 0.14);
+  --glow: radial-gradient(
+    ellipse at center,
+    rgba(29, 111, 253, 0.12) 0%,
+    transparent 68%
+  );
   --noise-opacity: 0.02;
   color-scheme: light;
 }
@@ -54,9 +86,9 @@ $font-body: "DM Sans", system-ui, sans-serif;
 $font-mono: "JetBrains Mono", ui-monospace, monospace;
 
 $radius-sm: 10px;
-$radius-md: 16px;
-$radius-lg: 24px;
-$radius-xl: 32px;
+$radius-md: 14px;
+$radius-lg: 22px;
+$radius-xl: 30px;
 
 $ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 $ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
