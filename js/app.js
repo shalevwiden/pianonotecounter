@@ -1,10 +1,33 @@
 import { MidiManager } from "./midi.js";
 import { SessionRecorder } from "./recorder.js";
 import { buildMidiFile, downloadMidi } from "./midi-writer.js";
-import { PianoSynth } from "./synth.js";
+import { PianoSynth, VOICES } from "./synth.js";
 import { PianoKeyboardUI } from "./piano-ui.js";
 import { ComputerKeyboard, DEFAULT_KEY_MAP, codeLabel } from "./keyboard.js";
 import { noteName } from "./note-utils.js";
+import {
+  saveSession,
+  listSessions,
+  getSession,
+  deleteSession,
+  clearHistory,
+  getHistoryStats,
+  getStorageUsage,
+  expandEvents,
+} from "./history.js";
+import {
+  DEFAULT_VIDEO_STYLE,
+  VIDEO_FPS,
+  VIDEO_WIDTH,
+  VIDEO_HEIGHT,
+  TAIL_MS,
+  buildNoteTimeline,
+  sessionDurationMs,
+  renderCounterFrame,
+  exportCounterVideo,
+  downloadBlob,
+  isVideoExportSupported,
+} from "./video-export.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -15,6 +38,8 @@ const STORAGE = {
   volume: "psr-volume",
   velocity: "psr-velocity",
   source: "psr-source",
+  voice: "psr-voice",
+  videoStyle: "psr-video-style",
 };
 
 const ui = {
@@ -22,12 +47,16 @@ const ui = {
   settingsBtn: $("btnSettings"),
   navItems: document.querySelectorAll(".nav__item"),
   viewDashboard: $("viewDashboard"),
+  viewHistory: $("viewHistory"),
+  viewStats: $("viewStats"),
   viewAbout: $("viewAbout"),
   sourceButtons: document.querySelectorAll(".segmented__item"),
   midiDot: $("midiDot"),
   midiStatus: $("midiStatus"),
   deviceSelect: $("deviceSelect"),
   recordingPill: $("recordingPill"),
+  recordingDot: $("recordingDot"),
+  recordingLabel: $("recordingLabel"),
   noteCount: $("noteCount"),
   heroHint: $("heroHint"),
   statTotal: $("statTotal"),
@@ -35,8 +64,13 @@ const ui = {
   statPeakNps: $("statPeakNps"),
   statElapsed: $("statElapsed"),
   btnRecord: $("btnRecord"),
+  btnPause: $("btnPause"),
+  btnResume: $("btnResume"),
   btnStop: $("btnStop"),
   btnExport: $("btnExport"),
+  btnSaveVideo: $("btnSaveVideo"),
+  btnSave: $("btnSave"),
+  btnSaveLabel: $("btnSaveLabel"),
   btnReset: $("btnReset"),
   eventMeta: $("eventMeta"),
   footerSource: $("footerSource"),
@@ -45,6 +79,8 @@ const ui = {
   btnOctaveDown: $("btnOctaveDown"),
   btnOctaveUp: $("btnOctaveUp"),
   soundToggle: $("soundToggle"),
+  voiceSelect: $("voiceSelect"),
+  voiceSelectSettings: $("voiceSelectSettings"),
   piano: $("piano"),
   pianoHint: $("pianoHint"),
   settingsModal: $("settingsModal"),
@@ -55,6 +91,46 @@ const ui = {
   keymapList: $("keymapList"),
   btnResetMapping: $("btnResetMapping"),
   toast: $("toast"),
+  historyList: $("historyList"),
+  historyDetailEmpty: $("historyDetailEmpty"),
+  historyDetailBody: $("historyDetailBody"),
+  detailDate: $("detailDate"),
+  detailTitle: $("detailTitle"),
+  detailGrid: $("detailGrid"),
+  btnDetailExport: $("btnDetailExport"),
+  btnDetailVideo: $("btnDetailVideo"),
+  btnDetailDelete: $("btnDetailDelete"),
+  btnClearHistory: $("btnClearHistory"),
+  statsSinceValue: $("statsSinceValue"),
+  statsSinceSub: $("statsSinceSub"),
+  statsTotalNotes: $("statsTotalNotes"),
+  statsSessionCount: $("statsSessionCount"),
+  statsPracticeTime: $("statsPracticeTime"),
+  statsNotesToday: $("statsNotesToday"),
+  statsPeakNps: $("statsPeakNps"),
+  statsAvgNotes: $("statsAvgNotes"),
+  statsExports: $("statsExports"),
+  statsAvgDuration: $("statsAvgDuration"),
+  statsStorage: $("statsStorage"),
+  statsStorageNote: $("statsStorageNote"),
+  videoModal: $("videoModal"),
+  btnVideoClose: $("btnVideoClose"),
+  videoPreview: $("videoPreview"),
+  videoMeta: $("videoMeta"),
+  videoTextMode: $("videoTextMode"),
+  videoTextColor: $("videoTextColor"),
+  videoTextColorEnd: $("videoTextColorEnd"),
+  videoGradientRow: $("videoGradientRow"),
+  videoAngleRow: $("videoAngleRow"),
+  videoGradientAngle: $("videoGradientAngle"),
+  videoGradientAngleValue: $("videoGradientAngleValue"),
+  videoBgColor: $("videoBgColor"),
+  videoProgressBlock: $("videoProgressBlock"),
+  videoProgressFill: $("videoProgressFill"),
+  videoProgressLabel: $("videoProgressLabel"),
+  btnVideoRender: $("btnVideoRender"),
+  btnVideoCancel: $("btnVideoCancel"),
+  videoCompat: $("videoCompat"),
 };
 
 const midi = new MidiManager();
@@ -65,6 +141,23 @@ let inputSource = "keyboard";
 let toastTimer = null;
 let lockedNoteCount = 0;
 let audioPromptShown = false;
+/** Wall-clock start of the current take (Date.now). */
+let sessionWallStart = null;
+/** True once the current take has been written to History. */
+let sessionSaved = false;
+let selectedHistoryId = null;
+let statsClockId = null;
+
+/** Active video-editor payload (current take or History session). */
+let videoEditor = {
+  events: [],
+  noteCount: 0,
+  durationMs: 0,
+  filenameBase: "piano-session",
+  style: { ...DEFAULT_VIDEO_STYLE },
+  rendering: false,
+  cancelRequested: false,
+};
 
 const piano = new PianoKeyboardUI(ui.piano, {
   onNoteOn: (note) => {
@@ -96,6 +189,54 @@ function formatElapsed(ms) {
   const seconds = Math.floor(tenths / 10);
   const minutes = Math.floor(seconds / 60);
   return `${minutes}:${String(seconds % 60).padStart(2, "0")}.${tenths % 10}`;
+}
+
+function formatClock(ms) {
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  if (hours > 0) {
+    return `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  }
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
+function formatSince(ms) {
+  if (ms == null) return "—";
+  const elapsed = Math.max(0, Date.now() - ms);
+  const days = Math.floor(elapsed / 86_400_000);
+  const hours = Math.floor((elapsed % 86_400_000) / 3_600_000);
+  const minutes = Math.floor((elapsed % 3_600_000) / 60_000);
+  const seconds = Math.floor((elapsed % 60_000) / 1000);
+  if (days > 0) return `${days}d ${hours}h`;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  if (minutes > 0) return `${minutes}m ${seconds}s`;
+  return `${seconds}s`;
+}
+
+function formatDateTime(ms) {
+  return new Date(ms).toLocaleString(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function formatDay(ms) {
+  return new Date(ms).toLocaleDateString(undefined, {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function voiceLabel(id) {
+  return VOICES.find((voice) => voice.id === id)?.label ?? id;
 }
 
 /* -------------------------------------------------------------------- notes */
@@ -189,12 +330,47 @@ function updateCounters() {
 }
 
 function updateControls() {
+  const active = session.active;
   const recording = session.recording;
-  ui.btnRecord.hidden = recording;
-  ui.btnStop.hidden = !recording;
-  ui.btnExport.disabled = !session.hasData;
-  ui.btnReset.disabled = recording || !session.hasData;
-  ui.recordingPill.hidden = !recording;
+  const paused = session.paused;
+  const canPersist = session.hasData && !active;
+
+  ui.btnRecord.hidden = active;
+  ui.btnPause.hidden = !recording;
+  ui.btnResume.hidden = !paused;
+  ui.btnStop.hidden = !active;
+  ui.btnExport.disabled = !canPersist;
+  ui.btnSaveVideo.disabled = !canPersist;
+  ui.btnReset.disabled = active || !session.hasData;
+
+  ui.recordingPill.hidden = !active;
+  if (ui.recordingLabel) {
+    ui.recordingLabel.textContent = paused ? "Paused" : "Recording";
+  }
+  if (ui.recordingDot) {
+    ui.recordingDot.classList.toggle("status-bar__dot--recording", recording);
+    ui.recordingDot.classList.toggle("status-bar__dot--paused", paused);
+  }
+
+  updateSaveButton(canPersist);
+}
+
+function updateSaveButton(canPersist) {
+  if (!ui.btnSave) return;
+
+  ui.btnSave.classList.toggle("btn--saved", sessionSaved);
+  if (sessionSaved) {
+    ui.btnSave.disabled = true;
+    ui.btnSaveLabel.textContent = "Saved";
+    ui.btnSave.title = "This take is already in History. Export also saves automatically.";
+    return;
+  }
+
+  ui.btnSave.disabled = !canPersist;
+  ui.btnSaveLabel.textContent = "Save";
+  ui.btnSave.title = canPersist
+    ? "Save this session to History without exporting"
+    : "Stop a recording with notes before saving";
 }
 
 function setInputSource(source, { persist = false } = {}) {
@@ -272,27 +448,100 @@ function showToast(message) {
 function startRecording() {
   synth.resume();
   session.start();
+  sessionWallStart = Date.now();
+  sessionSaved = false;
+  updateCounters();
+  updateControls();
+  setHint("Recording — Space pauses, Stop ends the take.");
+}
+
+function pauseRecording() {
+  if (!session.recording) return;
+  session.pause();
+  updateCounters();
+  updateControls();
+  setHint("Paused — the clock keeps running as a gap. Space or Resume to continue.");
+}
+
+function resumeRecording() {
+  if (!session.paused) return;
+  session.resume();
   updateCounters();
   updateControls();
   setHint("Recording — every note is counted and captured.");
 }
 
 function stopRecording() {
+  if (!session.active) return;
   session.stop();
   updateCounters();
   updateControls();
   setHint(
     session.hasData
-      ? "Session captured. Export a .mid file for Synthesia."
+      ? "Session captured. Save, Export .mid, or Save Video."
       : "No notes were recorded."
   );
 }
 
 function resetSession() {
   session.reset();
+  sessionWallStart = null;
+  sessionSaved = false;
   updateCounters();
   updateControls();
   setHint("Press Record, then play your keyboard.");
+}
+
+function buildSessionDraft({ exported = false } = {}) {
+  const endedAt = Date.now();
+  const startedAt = sessionWallStart ?? endedAt - session.getElapsedMs();
+  return {
+    startedAt,
+    endedAt,
+    durationMs: session.getElapsedMs(),
+    noteCount: session.noteCount,
+    peakNps: session.peakNps,
+    events: session.events,
+    source: inputSource,
+    voice: synth.voiceId,
+    deviceName: midi.activeInput?.name ?? "",
+    exported,
+    pauseCount: session.pauseCount,
+    pauseSpans: session.pauseSpans,
+  };
+}
+
+function persistCurrentSession({ exported = false } = {}) {
+  if (!session.hasData || session.active) {
+    showToast("Nothing to save yet");
+    return null;
+  }
+  if (sessionSaved && !exported) {
+    showToast("Already saved to History");
+    return null;
+  }
+
+  try {
+    const record = saveSession(buildSessionDraft({ exported }));
+    sessionSaved = true;
+    updateControls();
+    renderHistory();
+    renderStats();
+    return record;
+  } catch (error) {
+    console.error(error);
+    showToast("Could not save — storage may be full");
+    return null;
+  }
+}
+
+function saveCurrentSession() {
+  const record = persistCurrentSession({ exported: false });
+  if (!record) return;
+  showToast(
+    `Saved ${formatCount(record.noteCount)} notes · ${formatClock(record.durationMs)}`
+  );
+  setHint("Saved to History. You can still Export .mid from this take.");
 }
 
 function exportMidi() {
@@ -315,10 +564,22 @@ function exportMidi() {
   });
 
   downloadMidi(bytes, filename);
+
+  // Export always writes History so the take is not lost after download.
+  const didSave = !sessionSaved;
+  if (didSave) {
+    persistCurrentSession({ exported: true });
+  }
+
   showToast(
-    `Exported ${formatCount(session.noteCount)} notes · ${formatCount(
-      bytes.length
-    )} bytes`
+    didSave
+      ? `Exported & saved · ${formatCount(session.noteCount)} notes · ${formatCount(bytes.length)} bytes`
+      : `Exported ${formatCount(session.noteCount)} notes · ${formatCount(bytes.length)} bytes`
+  );
+  setHint(
+    didSave
+      ? "Exported .mid and saved to History."
+      : "Exported .mid. This take was already in History."
   );
 }
 
@@ -360,10 +621,23 @@ function loadSettings() {
   synth.setEnabled(soundOn);
   ui.soundToggle.checked = soundOn;
 
+  const savedVoice = localStorage.getItem(STORAGE.voice);
+  const voiceId = VOICES.some((voice) => voice.id === savedVoice)
+    ? savedVoice
+    : "piano";
+  setVoice(voiceId, { persist: false });
+
   const savedSource = localStorage.getItem(STORAGE.source);
   if (savedSource === "midi" || savedSource === "keyboard") {
     inputSource = savedSource;
   }
+}
+
+function setVoice(voiceId, { persist = true } = {}) {
+  synth.setVoice(voiceId);
+  if (ui.voiceSelect) ui.voiceSelect.value = voiceId;
+  if (ui.voiceSelectSettings) ui.voiceSelectSettings.value = voiceId;
+  if (persist) localStorage.setItem(STORAGE.voice, voiceId);
 }
 
 function saveMapping() {
@@ -440,9 +714,436 @@ function initTheme() {
 
 function setView(view) {
   ui.viewDashboard.hidden = view !== "dashboard";
+  ui.viewHistory.hidden = view !== "history";
+  ui.viewStats.hidden = view !== "stats";
   ui.viewAbout.hidden = view !== "about";
   for (const item of ui.navItems) {
     item.classList.toggle("is-active", item.dataset.view === view);
+  }
+
+  if (view === "history") renderHistory();
+  if (view === "stats") {
+    renderStats();
+    startStatsClock();
+  } else {
+    stopStatsClock();
+  }
+}
+
+/* ----------------------------------------------------------- history / stats */
+
+function renderHistory() {
+  if (!ui.historyList) return;
+  const sessions = listSessions();
+  ui.historyList.innerHTML = "";
+
+  if (sessions.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "session-list__empty";
+    empty.textContent =
+      "No saved sessions yet. Stop a recording, then hit Save — or Export .mid, which saves automatically.";
+    ui.historyList.appendChild(empty);
+    selectedHistoryId = null;
+    showHistoryDetail(null);
+    return;
+  }
+
+  if (!selectedHistoryId || !sessions.some((s) => s.id === selectedHistoryId)) {
+    selectedHistoryId = sessions[0].id;
+  }
+
+  for (const record of sessions) {
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "session-card";
+    card.setAttribute("role", "listitem");
+    if (record.id === selectedHistoryId) card.classList.add("is-active");
+
+    const when = document.createElement("div");
+    when.className = "session-card__when";
+    when.textContent = formatDateTime(record.savedAt);
+    if (record.exported) {
+      const badge = document.createElement("span");
+      badge.className = "session-card__badge";
+      badge.textContent = "Exported";
+      when.appendChild(badge);
+    }
+
+    const notes = document.createElement("div");
+    notes.className = "session-card__notes";
+    notes.textContent = `${formatCount(record.noteCount)} notes`;
+
+    const meta = document.createElement("div");
+    meta.className = "session-card__meta";
+    meta.textContent = [
+      formatDay(record.startedAt),
+      formatClock(record.durationMs),
+      voiceLabel(record.voice),
+    ].join(" · ");
+
+    card.append(when, notes, meta);
+    card.addEventListener("click", () => {
+      selectedHistoryId = record.id;
+      renderHistory();
+    });
+    ui.historyList.appendChild(card);
+  }
+
+  showHistoryDetail(getSession(selectedHistoryId));
+}
+
+function showHistoryDetail(record) {
+  if (!ui.historyDetailBody) return;
+
+  if (!record) {
+    ui.historyDetailEmpty.hidden = false;
+    ui.historyDetailBody.hidden = true;
+    return;
+  }
+
+  ui.historyDetailEmpty.hidden = true;
+  ui.historyDetailBody.hidden = false;
+  ui.detailDate.textContent = formatDay(record.startedAt);
+  ui.detailTitle.textContent = formatDateTime(record.savedAt);
+
+  const rows = [
+    ["Notes", formatCount(record.noteCount)],
+    ["Duration", formatClock(record.durationMs)],
+    ["Peak NPS", formatNps(record.peakNps)],
+    ["Avg NPS", formatNps(record.avgNps)],
+    ["Events", formatCount(record.eventCount)],
+    ["Voice", voiceLabel(record.voice)],
+    ["Input", record.source === "midi" ? "MIDI device" : "Computer keyboard"],
+    ["Device", record.deviceName || "—"],
+    ["Started", formatDateTime(record.startedAt)],
+    ["Ended", formatDateTime(record.endedAt)],
+    ["Saved", formatDateTime(record.savedAt)],
+    ["Pauses", formatCount(record.pauseCount ?? 0)],
+    ["Exported", record.exported ? "Yes" : "No"],
+  ];
+
+  ui.detailGrid.innerHTML = "";
+  for (const [label, value] of rows) {
+    const item = document.createElement("div");
+    item.className = "session-detail__item";
+    item.innerHTML = `<div class="session-detail__label">${label}</div><div class="session-detail__value"></div>`;
+    item.querySelector(".session-detail__value").textContent = value;
+    ui.detailGrid.appendChild(item);
+  }
+
+  const hasEvents = Boolean(record.events?.length);
+  ui.btnDetailExport.disabled = !hasEvents;
+  ui.btnDetailExport.dataset.sessionId = record.id;
+  if (ui.btnDetailVideo) {
+    ui.btnDetailVideo.disabled = !hasEvents;
+    ui.btnDetailVideo.dataset.sessionId = record.id;
+  }
+  ui.btnDetailDelete.dataset.sessionId = record.id;
+}
+
+function exportHistorySession(id) {
+  const record = getSession(id);
+  if (!record?.events?.length) {
+    showToast("This session has no MIDI data to export");
+    return;
+  }
+
+  const stamp = new Date(record.startedAt);
+  const pad = (n) => String(n).padStart(2, "0");
+  const filename = `piano-session-${stamp.getFullYear()}${pad(
+    stamp.getMonth() + 1
+  )}${pad(stamp.getDate())}-${pad(stamp.getHours())}${pad(
+    stamp.getMinutes()
+  )}${pad(stamp.getSeconds())}.mid`;
+
+  const bytes = buildMidiFile(expandEvents(record.events), {
+    trackName: "Piano Session Recorder",
+    bpm: 120,
+  });
+  downloadMidi(bytes, filename);
+  showToast(`Exported ${formatCount(record.noteCount)} notes from History`);
+}
+
+function sessionFilenameBase(date = new Date()) {
+  const stamp = date instanceof Date ? date : new Date(date);
+  const pad = (n) => String(n).padStart(2, "0");
+  return `piano-session-${stamp.getFullYear()}${pad(stamp.getMonth() + 1)}${pad(
+    stamp.getDate()
+  )}-${pad(stamp.getHours())}${pad(stamp.getMinutes())}${pad(
+    stamp.getSeconds()
+  )}`;
+}
+
+function loadVideoStyle() {
+  try {
+    const raw = localStorage.getItem(STORAGE.videoStyle);
+    if (!raw) return { ...DEFAULT_VIDEO_STYLE };
+    return { ...DEFAULT_VIDEO_STYLE, ...JSON.parse(raw) };
+  } catch {
+    return { ...DEFAULT_VIDEO_STYLE };
+  }
+}
+
+function persistVideoStyle(style) {
+  localStorage.setItem(STORAGE.videoStyle, JSON.stringify(style));
+}
+
+function readVideoStyleFromForm() {
+  return {
+    ...DEFAULT_VIDEO_STYLE,
+    textMode: ui.videoTextMode?.value === "solid" ? "solid" : "gradient",
+    textColor: ui.videoTextColor?.value || DEFAULT_VIDEO_STYLE.textColor,
+    textColorEnd: ui.videoTextColorEnd?.value || DEFAULT_VIDEO_STYLE.textColorEnd,
+    gradientAngle: Number(ui.videoGradientAngle?.value ?? DEFAULT_VIDEO_STYLE.gradientAngle),
+    backgroundColor: ui.videoBgColor?.value || DEFAULT_VIDEO_STYLE.backgroundColor,
+  };
+}
+
+function applyVideoStyleToForm(style) {
+  const s = { ...DEFAULT_VIDEO_STYLE, ...style };
+  if (ui.videoTextMode) ui.videoTextMode.value = s.textMode;
+  if (ui.videoTextColor) ui.videoTextColor.value = s.textColor;
+  if (ui.videoTextColorEnd) ui.videoTextColorEnd.value = s.textColorEnd;
+  if (ui.videoGradientAngle) ui.videoGradientAngle.value = String(s.gradientAngle);
+  if (ui.videoGradientAngleValue) {
+    ui.videoGradientAngleValue.textContent = `${s.gradientAngle}°`;
+  }
+  if (ui.videoBgColor) ui.videoBgColor.value = s.backgroundColor;
+  updateVideoGradientVisibility();
+}
+
+function updateVideoGradientVisibility() {
+  const gradient = ui.videoTextMode?.value !== "solid";
+  if (ui.videoGradientRow) ui.videoGradientRow.hidden = !gradient;
+  if (ui.videoAngleRow) ui.videoAngleRow.hidden = !gradient;
+}
+
+function updateVideoPreview() {
+  if (!ui.videoPreview) return;
+  const style = readVideoStyleFromForm();
+  videoEditor.style = style;
+  persistVideoStyle(style);
+
+  const timeline = buildNoteTimeline(videoEditor.events);
+  const contentMs = Math.max(
+    videoEditor.durationMs,
+    sessionDurationMs(videoEditor.events, timeline)
+  );
+  // Preview the final count with a settled hit animation.
+  const count = timeline.length
+    ? timeline[timeline.length - 1].count
+    : videoEditor.noteCount;
+  const canvas = ui.videoPreview;
+  canvas.width = VIDEO_WIDTH;
+  canvas.height = VIDEO_HEIGHT;
+  const ctx = canvas.getContext("2d", { alpha: false });
+  if (!ctx) return;
+  renderCounterFrame(ctx, { count, hitProgress: 1, style });
+
+  const totalMs = contentMs + TAIL_MS;
+  const frames = Math.max(1, Math.ceil((totalMs / 1000) * VIDEO_FPS) + 1);
+  if (ui.videoMeta) {
+    ui.videoMeta.textContent = `${VIDEO_WIDTH}×${VIDEO_HEIGHT} · ${VIDEO_FPS} fps · ${formatClock(
+      contentMs
+    )} (+${formatClock(TAIL_MS)} tail) · ${formatCount(frames)} frames · ${formatCount(
+      count
+    )} notes · silent MP4`;
+  }
+}
+
+async function openVideoEditor({ events, noteCount, durationMs, filenameBase }) {
+  if (!ui.videoModal) return;
+  if (!events?.length) {
+    showToast("Nothing to render yet");
+    return;
+  }
+
+  videoEditor = {
+    events,
+    noteCount: noteCount ?? 0,
+    durationMs: durationMs ?? 0,
+    filenameBase: filenameBase || sessionFilenameBase(),
+    style: loadVideoStyle(),
+    rendering: false,
+    cancelRequested: false,
+  };
+
+  applyVideoStyleToForm(videoEditor.style);
+  setVideoRenderUi(false);
+  if (ui.videoProgressBlock) ui.videoProgressBlock.hidden = true;
+  if (ui.videoProgressFill) ui.videoProgressFill.style.width = "0%";
+  if (ui.videoProgressLabel) ui.videoProgressLabel.textContent = "Ready";
+
+  const supported = await isVideoExportSupported();
+  if (ui.videoCompat) {
+    ui.videoCompat.hidden = supported;
+    ui.videoCompat.textContent = supported
+      ? ""
+      : "H.264 / WebCodecs encoding is unavailable here. Use Chrome or Edge to download an MP4.";
+  }
+  if (ui.btnVideoRender) ui.btnVideoRender.disabled = !supported;
+
+  keyboard.setEnabled(false);
+  updateVideoPreview();
+  ui.videoModal.showModal();
+}
+
+function closeVideoEditor() {
+  if (videoEditor.rendering) {
+    videoEditor.cancelRequested = true;
+  }
+  ui.videoModal?.close();
+}
+
+function setVideoRenderUi(rendering) {
+  videoEditor.rendering = rendering;
+  if (ui.btnVideoRender) {
+    ui.btnVideoRender.disabled = rendering;
+    ui.btnVideoRender.textContent = rendering ? "Rendering…" : "Download MP4";
+  }
+  if (ui.btnVideoCancel) ui.btnVideoCancel.hidden = !rendering;
+  const controls = [
+    ui.videoTextMode,
+    ui.videoTextColor,
+    ui.videoTextColorEnd,
+    ui.videoGradientAngle,
+    ui.videoBgColor,
+  ];
+  for (const el of controls) {
+    if (el) el.disabled = rendering;
+  }
+  for (const swatch of document.querySelectorAll(".video-swatch")) {
+    swatch.disabled = rendering;
+  }
+}
+
+async function startVideoRender() {
+  if (videoEditor.rendering) return;
+  const style = readVideoStyleFromForm();
+  videoEditor.style = style;
+  persistVideoStyle(style);
+  videoEditor.cancelRequested = false;
+  setVideoRenderUi(true);
+  if (ui.videoProgressBlock) ui.videoProgressBlock.hidden = false;
+  if (ui.videoProgressFill) ui.videoProgressFill.style.width = "0%";
+  if (ui.videoProgressLabel) ui.videoProgressLabel.textContent = "Encoding…";
+
+  try {
+    const blob = await exportCounterVideo({
+      events: videoEditor.events,
+      style,
+      previewCanvas: ui.videoPreview,
+      shouldCancel: () => videoEditor.cancelRequested,
+      onProgress: ({ ratio, frame, totalFrames, count }) => {
+        if (ui.videoProgressFill) {
+          ui.videoProgressFill.style.width = `${Math.round(ratio * 100)}%`;
+        }
+        if (ui.videoProgressLabel) {
+          ui.videoProgressLabel.textContent = `Frame ${formatCount(frame)} / ${formatCount(
+            totalFrames
+          )} · count ${formatCount(count)}`;
+        }
+      },
+    });
+
+    downloadBlob(blob, `${videoEditor.filenameBase}.mp4`);
+    showToast("MP4 downloaded — silent counter video");
+    if (ui.videoProgressLabel) ui.videoProgressLabel.textContent = "Done";
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      showToast("Video export cancelled");
+      if (ui.videoProgressLabel) ui.videoProgressLabel.textContent = "Cancelled";
+    } else {
+      console.error(error);
+      showToast(error?.message || "Video export failed");
+      if (ui.videoProgressLabel) {
+        ui.videoProgressLabel.textContent = error?.message || "Failed";
+      }
+    }
+  } finally {
+    setVideoRenderUi(false);
+    updateVideoPreview();
+  }
+}
+
+function openCurrentSessionVideo() {
+  if (!session.hasData || session.active) {
+    showToast("Stop the take before saving a video");
+    return;
+  }
+  openVideoEditor({
+    events: session.events,
+    noteCount: session.noteCount,
+    durationMs: session.getElapsedMs(),
+    filenameBase: sessionFilenameBase(sessionWallStart ?? Date.now()),
+  });
+}
+
+function openHistorySessionVideo(id) {
+  const record = getSession(id);
+  if (!record?.events?.length) {
+    showToast("This session has no data to render");
+    return;
+  }
+  openVideoEditor({
+    events: expandEvents(record.events),
+    noteCount: record.noteCount,
+    durationMs: record.durationMs,
+    filenameBase: sessionFilenameBase(record.startedAt),
+  });
+}
+
+function renderStats() {
+  const stats = getHistoryStats();
+  ui.statsTotalNotes.textContent = formatCount(stats.totalNotes);
+  ui.statsSessionCount.textContent = formatCount(stats.sessionCount);
+  ui.statsPracticeTime.textContent = formatClock(stats.totalDurationMs);
+  ui.statsNotesToday.textContent = formatCount(stats.notesToday);
+  ui.statsPeakNps.textContent = formatNps(stats.peakNps);
+  ui.statsAvgNotes.textContent = formatCount(Math.round(stats.avgNotesPerSession));
+  ui.statsExports.textContent = formatCount(stats.exportedCount);
+  ui.statsAvgDuration.textContent = formatClock(stats.avgDurationMs);
+
+  if (stats.lastSavedAt == null) {
+    ui.statsSinceValue.textContent = "—";
+    ui.statsSinceSub.textContent = "No sessions saved yet";
+  } else {
+    ui.statsSinceValue.textContent = formatSince(stats.lastSavedAt);
+    ui.statsSinceSub.textContent = `Last save · ${formatDateTime(stats.lastSavedAt)}`;
+  }
+
+  renderStorageUsage();
+}
+
+function formatBytes(bytes) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+
+function renderStorageUsage() {
+  if (!ui.statsStorage) return;
+  const usage = getStorageUsage();
+  ui.statsStorage.textContent = formatBytes(usage.bytes);
+  if (ui.statsStorageNote) {
+    const percent = ((usage.bytes / usage.quotaBytes) * 100).toFixed(1);
+    ui.statsStorageNote.textContent = usage.sessionCount
+      ? `${percent}% of the ~5 MB browser budget · ${formatCount(
+          usage.sessionsWithEvents
+        )} of ${formatCount(usage.sessionCount)} keep MIDI data`
+      : "Saved on this device only";
+  }
+}
+
+function startStatsClock() {
+  stopStatsClock();
+  statsClockId = setInterval(renderStats, 1000);
+}
+
+function stopStatsClock() {
+  if (statsClockId) {
+    clearInterval(statsClockId);
+    statsClockId = null;
   }
 }
 
@@ -514,9 +1215,94 @@ function bindUi() {
   });
 
   ui.btnRecord.addEventListener("click", startRecording);
+  ui.btnPause?.addEventListener("click", pauseRecording);
+  ui.btnResume?.addEventListener("click", resumeRecording);
   ui.btnStop.addEventListener("click", stopRecording);
   ui.btnExport.addEventListener("click", exportMidi);
+  ui.btnSaveVideo?.addEventListener("click", openCurrentSessionVideo);
+  ui.btnSave?.addEventListener("click", saveCurrentSession);
   ui.btnReset.addEventListener("click", resetSession);
+
+  ui.btnClearHistory?.addEventListener("click", () => {
+    if (!listSessions().length) {
+      showToast("History is already empty");
+      return;
+    }
+    if (!confirm("Delete every saved session? This cannot be undone.")) return;
+    clearHistory();
+    selectedHistoryId = null;
+    renderHistory();
+    renderStats();
+    showToast("History cleared");
+  });
+
+  ui.btnDetailExport?.addEventListener("click", () => {
+    exportHistorySession(ui.btnDetailExport.dataset.sessionId);
+  });
+
+  ui.btnDetailVideo?.addEventListener("click", () => {
+    openHistorySessionVideo(ui.btnDetailVideo.dataset.sessionId);
+  });
+
+  ui.btnDetailDelete?.addEventListener("click", () => {
+    const id = ui.btnDetailDelete.dataset.sessionId;
+    if (!id || !confirm("Delete this session?")) return;
+    deleteSession(id);
+    if (selectedHistoryId === id) selectedHistoryId = null;
+    renderHistory();
+    renderStats();
+    showToast("Session deleted");
+  });
+
+  const onVideoStyleChange = () => {
+    updateVideoGradientVisibility();
+    updateVideoPreview();
+  };
+  ui.videoTextMode?.addEventListener("change", onVideoStyleChange);
+  ui.videoTextColor?.addEventListener("input", onVideoStyleChange);
+  ui.videoTextColorEnd?.addEventListener("input", onVideoStyleChange);
+  ui.videoBgColor?.addEventListener("input", onVideoStyleChange);
+  ui.videoGradientAngle?.addEventListener("input", () => {
+    if (ui.videoGradientAngleValue) {
+      ui.videoGradientAngleValue.textContent = `${ui.videoGradientAngle.value}°`;
+    }
+    onVideoStyleChange();
+  });
+
+  for (const swatch of document.querySelectorAll(".video-swatch")) {
+    swatch.addEventListener("click", () => {
+      if (videoEditor.rendering) return;
+      const bg = swatch.dataset.bg;
+      if (!bg || !ui.videoBgColor) return;
+      ui.videoBgColor.value = bg;
+      onVideoStyleChange();
+    });
+  }
+
+  ui.btnVideoRender?.addEventListener("click", () => {
+    startVideoRender();
+  });
+  ui.btnVideoCancel?.addEventListener("click", () => {
+    videoEditor.cancelRequested = true;
+    if (ui.videoProgressLabel) ui.videoProgressLabel.textContent = "Cancelling…";
+  });
+  ui.btnVideoClose?.addEventListener("click", () => {
+    if (videoEditor.rendering) {
+      videoEditor.cancelRequested = true;
+    }
+    closeVideoEditor();
+  });
+  ui.videoModal?.addEventListener("cancel", (event) => {
+    if (videoEditor.rendering) {
+      event.preventDefault();
+      videoEditor.cancelRequested = true;
+      if (ui.videoProgressLabel) ui.videoProgressLabel.textContent = "Cancelling…";
+    }
+  });
+  ui.videoModal?.addEventListener("close", () => {
+    videoEditor.cancelRequested = videoEditor.rendering;
+    updateSourceUi();
+  });
 
   ui.btnOctaveDown.addEventListener("click", () => keyboard.shiftOctave(-1));
   ui.btnOctaveUp.addEventListener("click", () => keyboard.shiftOctave(1));
@@ -526,6 +1312,13 @@ function bindUi() {
     localStorage.setItem(STORAGE.sound, ui.soundToggle.checked ? "on" : "off");
     if (ui.soundToggle.checked) synth.resume();
   });
+
+  const onVoiceChange = (event) => {
+    synth.resume();
+    setVoice(event.target.value);
+  };
+  ui.voiceSelect?.addEventListener("change", onVoiceChange);
+  ui.voiceSelectSettings?.addEventListener("change", onVoiceChange);
 
   ui.settingsBtn.addEventListener("click", () => {
     renderKeymap();
@@ -558,13 +1351,17 @@ function bindUi() {
   });
 
   window.addEventListener("keydown", (event) => {
-    if (ui.settingsModal.open) return;
+    if (ui.settingsModal?.open || ui.videoModal?.open) return;
     if (event.target.closest?.("input, textarea, select")) return;
 
     if (event.code === "Space") {
       event.preventDefault();
-      if (session.recording) stopRecording();
-      else startRecording();
+      if (session.recording) pauseRecording();
+      else if (session.paused) resumeRecording();
+      else if (!session.active) startRecording();
+    } else if (event.code === "Escape" && session.active) {
+      event.preventDefault();
+      stopRecording();
     } else if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "e") {
       event.preventDefault();
       exportMidi();
@@ -597,6 +1394,8 @@ bindUi();
 updateSourceUi();
 updateCounters();
 updateControls();
+renderHistory();
+renderStats();
 initMidi();
 
 requestAnimationFrame(() => piano.scrollToNote(keyboard.baseNote));

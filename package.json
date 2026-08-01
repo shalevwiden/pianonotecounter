@@ -1,0 +1,19 @@
+{
+  "name": "piano-session-recorder",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Piano Session Recorder — live MIDI counter with MP4 export",
+  "scripts": {
+    "build:vendor": "esbuild vendor/mediabunny-entry.mjs --bundle --format=esm --outfile=js/vendor/mediabunny.js --platform=browser --target=es2022 --minify",
+    "postinstall": "npm run build:vendor",
+    "verify:video": "node scripts/verify_video_timeline.mjs",
+    "verify:pause": "node scripts/verify_pause_recorder.mjs"
+  },
+  "dependencies": {
+    "mediabunny": "^1.25.2"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.8"
+  }
+}

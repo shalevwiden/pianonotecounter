@@ -8,7 +8,8 @@ Tested with a **Yamaha P-145BT** over USB MIDI in Chrome.
 
 - [Python 3](https://www.python.org/) for the local server
 - [Sass](https://sass-lang.com/) only if you edit styles (`brew install sass/sass/sass`)
-- Chrome or Edge for Web MIDI (computer-keyboard input works in any modern browser)
+- [Node.js](https://nodejs.org/) only if you rebuild the Mediabunny vendor bundle
+- Chrome or Edge for Web MIDI and MP4 export (computer-keyboard input works in any modern browser; video encoding needs WebCodecs H.264)
 
 ## Quick start
 
@@ -40,19 +41,56 @@ A connected instrument **always** plays and records. The source toggle only deci
 | `A S D F G H J K L ; '` | White keys, C4 upward |
 | `W E T Y U O P` | Black keys |
 | `Z` / `X` | Octave down / up (arrow keys also work) |
-| `Space` | Start or stop recording |
-| `⌘E` / `Ctrl+E` | Export the session |
+| `Space` | Start, then pause / resume the take |
+| `Esc` | Stop the current take |
+| `⌘E` / `Ctrl+E` | Export the session as MIDI |
 
-Multiple keys can be held at once, key repeat is ignored, and every note lights up the on-screen 88-key piano. Notes sound through a built-in synth, which can be muted with the Sound switch.
+Multiple keys can be held at once, key repeat is ignored, and every note lights up the on-screen 88-key piano. Notes sound through a built-in multi-voice synth (grand, Steinway, cinematic piano, harpsichord, electric piano, electric guitar, 80s synth), which can be muted with the Sound switch.
 
 ## Recording and export
 
 1. Press **Record** (or `Space`).
 2. Play. The counter, notes per second, peak NPS, and elapsed time update live.
-3. Press **Stop**.
-4. Press **Export .mid**.
+3. Press **Pause** (or `Space` again) to freeze capture while the timeline keeps running — pauses become silence in MIDI and a frozen counter plateau in video. Held notes are closed when you pause so nothing sustains across the gap. **Resume** continues the same take.
+4. Press **Stop** (or `Esc`) to finalize.
+5. Press **Save** to store the take in History, **Export .mid** (downloads and auto-saves), or **Save Video** for a silent counter MP4. The Save button turns green once the take is stored in History.
 
-Exports are **SMF Format 1** at **480 PPQN** with a dedicated tempo track at 120 BPM. Notes still held when you stop are closed automatically, leading silence is trimmed so the roll starts on your first note, and system-realtime traffic such as active sensing is discarded.
+MIDI exports are **SMF Format 1** at **480 PPQN** with a dedicated tempo track at 120 BPM.
+
+### Save Video (silent MP4)
+
+**Save Video** opens an editor with a live 16:9 preview, text/background colors, solid or gradient number styling, and a Download MP4 action. Output is **1920×1080 at 60 fps**, silent (no audio track). The counter advances exactly on each recorded note-on; pauses and idle gaps stay frozen for their real duration.
+
+Video export uses the browser **WebCodecs** H.264 encoder via [Mediabunny](https://www.npmjs.com/package/mediabunny). Use **Chrome or Edge**. Style preferences are remembered in local storage. Rendering a video does **not** mark the session as MIDI-exported or create a duplicate History entry.
+
+The Mediabunny bundle is committed at `js/vendor/mediabunny.js`. After changing the dependency:
+
+```bash
+npm install          # also runs postinstall → npm run build:vendor
+npm run build:vendor # rebuild the static ESM bundle only
+```
+
+### History & Stats
+
+- **History** lists every saved session. Click one for notes, duration, peak NPS, pauses, voice, device, and timestamps. Re-export MIDI, **Save Video**, or delete from the detail panel.
+- **Stats** shows lifetime totals: notes, sessions, practice time, notes today, lifetime peak NPS, how long it has been since your last save, and current storage use.
+
+### Where your data lives
+
+Everything stays in your browser's `localStorage` on this device — nothing is uploaded, and there is no server component beyond the local static file server. History lives under the key `psr-history-v1`, video style preferences under `psr-video-style`.
+
+A session stores its MIDI events in a compact `[timeMs, status, data1, data2]` tuple form, which is roughly four times smaller than a JSON object per event but still larger than the binary `.mid` you download:
+
+| Session | Downloaded `.mid` | In History |
+| --- | --- | --- |
+| 100 notes (~30 s) | ~1 KB | ~3 KB |
+| 1,000 notes (~4 min) | ~9 KB | ~36 KB |
+| 5,000 notes (~20 min) | ~44 KB | ~190 KB |
+| 20,000 notes (~80 min) | ~176 KB | ~770 KB |
+
+Browsers cap an origin at roughly 5 MB, so expect a few dozen long takes before pressure. History keeps the 200 most recent sessions, and if a write hits the quota the oldest sessions drop their MIDI payloads first — metadata and stats survive, only re-export does not. Use **Clear all** in History to reclaim everything, or delete individual sessions.
+
+**Videos are never stored.** Each MP4 is rendered on demand in memory and handed straight to your download folder; only the color settings persist.
 
 ### Checking an exported file
 
@@ -77,15 +115,21 @@ piano-midi/
 │   ├── app.js                # UI wiring and session flow
 │   ├── midi.js               # Web MIDI device manager
 │   ├── keyboard.js           # QWERTY piano mapping
-│   ├── synth.js              # WebAudio piano voice
+│   ├── synth.js              # WebAudio multi-voice synth
 │   ├── piano-ui.js           # 88-key on-screen keyboard
-│   ├── recorder.js           # event capture and live stats
+│   ├── recorder.js           # event capture, pause, live stats
 │   ├── midi-writer.js        # Standard MIDI File builder
-│   └── note-utils.js         # shared note helpers
+│   ├── video-export.js       # canvas counter → silent MP4
+│   ├── history.js            # saved session store
+│   ├── note-utils.js         # shared note helpers
+│   └── vendor/mediabunny.js  # bundled MP4 encoder (esbuild)
+├── vendor/mediabunny-entry.mjs
+├── package.json              # npm run build:vendor
 └── scripts/
     ├── serve.py              # local HTTP server
     ├── compile_scss.py       # SCSS → CSS
-    └── verify_midi.py        # inspect an exported .mid
+    ├── verify_midi.py        # inspect an exported .mid
+    └── verify_video_timeline.mjs
 ```
 
 ## Editing styles
@@ -110,4 +154,7 @@ Confirm the keyboard is powered and connected over USB rather than Bluetooth onl
 Browsers keep audio locked until the page receives a real user gesture, and MIDI notes do not count as one — playing a connected instrument on a page you have never clicked leaves the audio context suspended. Click anywhere once and the sound starts; the app prompts you if it detects this. Also check that the Sound switch is on.
 
 **Notes are not counting**  
-Counting starts when a recording is active. Press **Record** first, and confirm the input source matches how you are playing.
+Counting starts when a recording is active (not paused). Press **Record** first, and confirm the input source matches how you are playing.
+
+**Save Video is disabled / encoding unavailable**  
+MP4 export needs Chromium WebCodecs with H.264. Use Chrome or Edge, then hard-reload. Safari and Firefox can still record and export MIDI.

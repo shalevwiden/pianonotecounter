@@ -48,6 +48,8 @@
           <button class="nav__item is-active" data-view="dashboard" type="button">
             Dashboard
           </button>
+          <button class="nav__item" data-view="history" type="button">History</button>
+          <button class="nav__item" data-view="stats" type="button">Stats</button>
           <button class="nav__item" data-view="about" type="button">About</button>
         </nav>
 
@@ -122,8 +124,8 @@
           </select>
 
           <div class="status-bar__pill status-bar__pill--rec" id="recordingPill" hidden>
-            <span class="status-bar__dot status-bar__dot--recording"></span>
-            <span>Recording</span>
+            <span class="status-bar__dot status-bar__dot--recording" id="recordingDot"></span>
+            <span id="recordingLabel">Recording</span>
           </div>
         </div>
 
@@ -165,6 +167,19 @@
             </svg>
             Record
           </button>
+          <button class="btn btn--secondary" id="btnPause" type="button" hidden>
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <rect x="4" y="3.5" width="2.75" height="9" rx="0.75" />
+              <rect x="9.25" y="3.5" width="2.75" height="9" rx="0.75" />
+            </svg>
+            Pause
+          </button>
+          <button class="btn btn--primary" id="btnResume" type="button" hidden>
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M5 3.5v9l8-4.5-8-4.5z" fill="currentColor" />
+            </svg>
+            Resume
+          </button>
           <button class="btn btn--danger" id="btnStop" type="button" hidden>
             <svg viewBox="0 0 16 16" aria-hidden="true">
               <rect x="4" y="4" width="8" height="8" rx="1.5" />
@@ -184,6 +199,43 @@
             </svg>
             Export .mid
           </button>
+          <button
+            class="btn btn--secondary"
+            id="btnSaveVideo"
+            type="button"
+            disabled
+            title="Render a silent counter video as MP4"
+          >
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <path
+                d="M2.5 4.25h7.5v7.5H2.5V4.25zm8.25 1.5L13.5 4v8l-2.75-1.75V5.75z"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.4"
+                stroke-linejoin="round"
+              />
+            </svg>
+            Save Video
+          </button>
+          <button
+            class="btn btn--secondary"
+            id="btnSave"
+            type="button"
+            disabled
+            title="Save this session to History"
+          >
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <path
+                d="M3.5 2.5h7.2L12.5 4.3V13.5H3.5V2.5zm2 0v3.2h5.2V2.5M5 9.5h6"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            <span id="btnSaveLabel">Save</span>
+          </button>
           <button class="btn btn--ghost" id="btnReset" type="button" disabled>
             Reset
           </button>
@@ -194,6 +246,19 @@
             <div class="now-playing">
               <span class="now-playing__label">Now playing</span>
               <span class="now-playing__value" id="nowPlaying">—</span>
+            </div>
+
+            <div class="voice-select">
+              <label class="voice-select__label" for="voiceSelect">Voice</label>
+              <select id="voiceSelect" class="voice-select__control" aria-label="Instrument voice">
+                <option value="piano">Grand Piano</option>
+                <option value="steinway">Steinway</option>
+                <option value="cinematic">Cinematic Piano</option>
+                <option value="harpsichord">Harpsichord</option>
+                <option value="epiano">Electric Piano</option>
+                <option value="eguitar">Electric Guitar</option>
+                <option value="eighties">80s Synth</option>
+              </select>
             </div>
 
             <div class="octave">
@@ -222,6 +287,113 @@
             Home row <kbd>A</kbd>–<kbd>'</kbd> plays white keys, the row above plays
             the black keys. <kbd>Z</kbd> / <kbd>X</kbd> shift octaves.
           </p>
+        </section>
+      </main>
+
+      <main class="main main--doc" id="viewHistory" hidden>
+        <section class="library">
+          <header class="library__head">
+            <div>
+              <span class="doc__eyebrow">History</span>
+              <h1 class="library__title">Saved sessions</h1>
+              <p class="library__lead">
+                Every Save or Export lands here. Click a session for the full breakdown.
+              </p>
+            </div>
+            <button class="btn btn--ghost btn--sm" id="btnClearHistory" type="button">
+              Clear all
+            </button>
+          </header>
+
+          <div class="library__layout">
+            <div class="session-list" id="historyList" role="list"></div>
+            <aside class="session-detail" id="historyDetail">
+              <div class="session-detail__empty" id="historyDetailEmpty">
+                Select a session to see notes, duration, voice, and more.
+              </div>
+              <div class="session-detail__body" id="historyDetailBody" hidden>
+                <div class="session-detail__date" id="detailDate"></div>
+                <h2 class="session-detail__title" id="detailTitle"></h2>
+                <div class="session-detail__grid" id="detailGrid"></div>
+                <div class="session-detail__actions">
+                  <button class="btn btn--secondary btn--sm" id="btnDetailExport" type="button">
+                    Export .mid
+                  </button>
+                  <button class="btn btn--secondary btn--sm" id="btnDetailVideo" type="button">
+                    Save Video
+                  </button>
+                  <button class="btn btn--ghost btn--sm" id="btnDetailDelete" type="button">
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </section>
+      </main>
+
+      <main class="main main--doc" id="viewStats" hidden>
+        <section class="library">
+          <header class="library__head">
+            <div>
+              <span class="doc__eyebrow">Stats</span>
+              <h1 class="library__title">Practice totals</h1>
+              <p class="library__lead">
+                Aggregated from every session you have saved.
+              </p>
+            </div>
+          </header>
+
+          <div class="stats-hero" id="statsSince">
+            <div class="stats-hero__label">Time since last save</div>
+            <div class="stats-hero__value" id="statsSinceValue">—</div>
+            <div class="stats-hero__sub" id="statsSinceSub">No sessions saved yet</div>
+          </div>
+
+          <div class="stats library-stats" aria-label="Lifetime statistics">
+            <article class="stat-card">
+              <div class="stat-card__label">Total Notes</div>
+              <div class="stat-card__value" id="statsTotalNotes">0</div>
+            </article>
+            <article class="stat-card">
+              <div class="stat-card__label">Sessions</div>
+              <div class="stat-card__value" id="statsSessionCount">0</div>
+            </article>
+            <article class="stat-card">
+              <div class="stat-card__label">Practice Time</div>
+              <div class="stat-card__value" id="statsPracticeTime">0:00</div>
+            </article>
+            <article class="stat-card">
+              <div class="stat-card__label">Notes Today</div>
+              <div class="stat-card__value" id="statsNotesToday">0</div>
+            </article>
+            <article class="stat-card">
+              <div class="stat-card__label">Lifetime Peak NPS</div>
+              <div class="stat-card__value">
+                <span id="statsPeakNps">0.0</span
+                ><span class="stat-card__unit">nps</span>
+              </div>
+            </article>
+            <article class="stat-card">
+              <div class="stat-card__label">Avg Notes / Session</div>
+              <div class="stat-card__value" id="statsAvgNotes">0</div>
+            </article>
+            <article class="stat-card">
+              <div class="stat-card__label">Exports</div>
+              <div class="stat-card__value" id="statsExports">0</div>
+            </article>
+            <article class="stat-card">
+              <div class="stat-card__label">Avg Duration</div>
+              <div class="stat-card__value" id="statsAvgDuration">0:00</div>
+            </article>
+            <article class="stat-card">
+              <div class="stat-card__label">Storage Used</div>
+              <div class="stat-card__value" id="statsStorage">0 KB</div>
+              <div class="stat-card__note" id="statsStorageNote">
+                Saved on this device only
+              </div>
+            </article>
+          </div>
         </section>
       </main>
 
@@ -283,7 +455,8 @@
             <div><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><kbd>F</kbd><kbd>G</kbd><kbd>H</kbd><kbd>J</kbd><kbd>K</kbd><kbd>L</kbd><kbd>;</kbd><kbd>'</kbd><span>White keys</span></div>
             <div><kbd>W</kbd><kbd>E</kbd><kbd>T</kbd><kbd>Y</kbd><kbd>U</kbd><kbd>O</kbd><kbd>P</kbd><span>Black keys</span></div>
             <div><kbd>Z</kbd><kbd>X</kbd><span>Octave down / up (arrow keys work too)</span></div>
-            <div><kbd>Space</kbd><span>Start or stop recording</span></div>
+            <div><kbd>Space</kbd><span>Start, pause, or resume</span></div>
+            <div><kbd>Esc</kbd><span>Stop the current take</span></div>
             <div><kbd>⌘</kbd><kbd>E</kbd><span>Export the session</span></div>
           </div>
 
@@ -336,6 +509,26 @@
 
             <div class="setting__row">
               <div>
+                <div class="setting__title">Instrument voice</div>
+                <div class="setting__desc">
+                  Built-in synth tones — no samples required.
+                </div>
+              </div>
+              <div class="setting__control">
+                <select id="voiceSelectSettings" class="voice-select__control">
+                  <option value="piano">Grand Piano</option>
+                  <option value="steinway">Steinway</option>
+                  <option value="cinematic">Cinematic Piano</option>
+                  <option value="harpsichord">Harpsichord</option>
+                  <option value="epiano">Electric Piano</option>
+                  <option value="eguitar">Electric Guitar</option>
+                  <option value="eighties">80s Synth</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="setting__row">
+              <div>
                 <div class="setting__title">Volume</div>
                 <div class="setting__desc">Playback level for the built-in piano.</div>
               </div>
@@ -362,6 +555,120 @@
           </section>
         </div>
       </form>
+    </dialog>
+
+    <dialog class="modal modal--video" id="videoModal">
+      <div class="modal__inner">
+        <header class="modal__head">
+          <div>
+            <h2 class="modal__title">Save Video</h2>
+            <p class="modal__subtitle">
+              Silent 1080p · 60 fps counter replay — timing matches your take, including pauses.
+            </p>
+          </div>
+          <button class="icon-btn" id="btnVideoClose" type="button" aria-label="Close">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </header>
+
+        <div class="modal__body video-editor">
+          <div class="video-editor__preview-wrap">
+            <canvas
+              id="videoPreview"
+              class="video-editor__preview"
+              width="1920"
+              height="1080"
+            ></canvas>
+            <div class="video-editor__meta" id="videoMeta">—</div>
+          </div>
+
+          <div class="video-editor__controls">
+            <section class="setting">
+              <div class="setting__row">
+                <div>
+                  <div class="setting__title">Text style</div>
+                  <div class="setting__desc">Solid color or a two-stop gradient.</div>
+                </div>
+                <div class="setting__control">
+                  <select id="videoTextMode" class="voice-select__control">
+                    <option value="gradient">Gradient</option>
+                    <option value="solid">Solid</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="setting__row">
+                <div>
+                  <div class="setting__title">Number color</div>
+                </div>
+                <div class="setting__control">
+                  <input type="color" id="videoTextColor" value="#ffffff" />
+                </div>
+              </div>
+
+              <div class="setting__row" id="videoGradientRow">
+                <div>
+                  <div class="setting__title">Gradient end</div>
+                </div>
+                <div class="setting__control">
+                  <input type="color" id="videoTextColorEnd" value="#60a5fa" />
+                </div>
+              </div>
+
+              <div class="setting__row" id="videoAngleRow">
+                <div>
+                  <div class="setting__title">Gradient angle</div>
+                </div>
+                <div class="setting__control">
+                  <input
+                    type="range"
+                    id="videoGradientAngle"
+                    min="0"
+                    max="360"
+                    value="175"
+                  />
+                  <span class="setting__value" id="videoGradientAngleValue">175°</span>
+                </div>
+              </div>
+
+              <div class="setting__row">
+                <div>
+                  <div class="setting__title">Background</div>
+                  <div class="setting__desc">Pick any color for the full frame.</div>
+                </div>
+                <div class="setting__control video-editor__swatches">
+                  <button type="button" class="video-swatch" data-bg="#050505" title="Black" style="--swatch:#050505"></button>
+                  <button type="button" class="video-swatch" data-bg="#0b1020" title="Navy" style="--swatch:#0b1020"></button>
+                  <button type="button" class="video-swatch" data-bg="#111827" title="Slate" style="--swatch:#111827"></button>
+                  <button type="button" class="video-swatch" data-bg="#ffffff" title="White" style="--swatch:#ffffff"></button>
+                  <input type="color" id="videoBgColor" value="#050505" />
+                </div>
+              </div>
+            </section>
+
+            <div class="video-editor__progress" id="videoProgressBlock" hidden>
+              <div class="video-editor__progress-bar">
+                <div class="video-editor__progress-fill" id="videoProgressFill"></div>
+              </div>
+              <div class="video-editor__progress-label" id="videoProgressLabel">
+                Preparing…
+              </div>
+            </div>
+
+            <div class="video-editor__actions">
+              <button class="btn btn--primary" id="btnVideoRender" type="button">
+                Download MP4
+              </button>
+              <button class="btn btn--danger" id="btnVideoCancel" type="button" hidden>
+                Cancel
+              </button>
+              <p class="video-editor__compat" id="videoCompat" hidden></p>
+            </div>
+          </div>
+        </div>
+      </div>
     </dialog>
 
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>

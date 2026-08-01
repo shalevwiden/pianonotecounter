@@ -1,0 +1,249 @@
+@use "variables" as *;
+
+.library {
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  animation: fade-up 0.7s $ease-out both;
+
+  &__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1.25rem;
+    margin-bottom: 1.75rem;
+  }
+
+  &__title {
+    margin: 0.85rem 0 0;
+    font-family: $font-display;
+    font-size: clamp(1.85rem, 3.5vw, 2.6rem);
+    font-weight: 600;
+    letter-spacing: -0.035em;
+  }
+
+  &__lead {
+    margin-top: 0.55rem;
+    max-width: 48ch;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    line-height: 1.55;
+  }
+
+  &__layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
+    gap: 1rem;
+    min-height: 420px;
+
+    @media (max-width: 860px) {
+      grid-template-columns: 1fr;
+    }
+  }
+}
+
+.session-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  max-height: min(62vh, 640px);
+  overflow-y: auto;
+  padding-right: 0.25rem;
+  scrollbar-width: thin;
+
+  &__empty {
+    padding: 2.5rem 1.5rem;
+    text-align: center;
+    border-radius: $radius-lg;
+    border: 1px dashed var(--border-strong);
+    color: var(--text-muted);
+    font-size: 0.9375rem;
+    line-height: 1.55;
+  }
+}
+
+.session-card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.35rem 1rem;
+  width: 100%;
+  text-align: left;
+  padding: 1rem 1.15rem;
+  border-radius: $radius-md;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  transition: border-color 0.2s $ease-out, background 0.2s $ease-out,
+    transform 0.2s $ease-out;
+
+  &:hover {
+    border-color: var(--border-strong);
+    background: var(--surface-hover);
+  }
+
+  &.is-active {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+
+  &__when {
+    font-family: $font-display;
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+
+  &__meta {
+    grid-column: 1 / -1;
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+  }
+
+  &__notes {
+    font-family: $font-mono;
+    font-size: 0.85rem;
+    color: var(--accent-strong);
+    align-self: start;
+  }
+
+  &__badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.68rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    background: var(--success-soft);
+    color: var(--success);
+    margin-left: 0.45rem;
+  }
+}
+
+.session-detail {
+  border-radius: $radius-lg;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  padding: 1.35rem 1.45rem 1.5rem;
+  min-height: 280px;
+
+  &__empty {
+    height: 100%;
+    min-height: 220px;
+    display: grid;
+    place-items: center;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    line-height: 1.55;
+    padding: 1rem;
+  }
+
+  &__date {
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  &__title {
+    margin: 0.45rem 0 1.15rem;
+    font-family: $font-display;
+    font-size: 1.35rem;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+  }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
+  &__item {
+    padding: 0.75rem 0.85rem;
+    border-radius: $radius-sm;
+    background: var(--surface-sunken);
+    border: 1px solid var(--border);
+  }
+
+  &__label {
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.3rem;
+  }
+
+  &__value {
+    font-family: $font-display;
+    font-size: 1.05rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+    margin-top: 1.25rem;
+  }
+}
+
+.stats-hero {
+  margin-bottom: 1.25rem;
+  padding: 1.6rem 1.75rem;
+  border-radius: $radius-xl;
+  background:
+    linear-gradient(135deg, var(--accent-soft), transparent 55%),
+    var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+
+  &__label {
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  &__value {
+    margin-top: 0.45rem;
+    font-family: $font-display;
+    font-size: clamp(2.2rem, 5vw, 3.4rem);
+    font-weight: 600;
+    letter-spacing: -0.04em;
+    color: var(--accent-strong);
+  }
+
+  &__sub {
+    margin-top: 0.35rem;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+  }
+}
+
+.library-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+
+  @media (max-width: 900px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (max-width: 520px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.btn--saved {
+  background: var(--success-soft) !important;
+  border-color: var(--success) !important;
+  color: var(--success) !important;
+  box-shadow: none !important;
+  opacity: 1 !important;
+  cursor: default;
+}

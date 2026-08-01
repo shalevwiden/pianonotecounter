@@ -61,6 +61,11 @@
       box-shadow: 0 0 0 3px var(--danger-soft);
       animation: pulse-dot 1.4s ease-in-out infinite;
     }
+
+    &--paused {
+      background: var(--warn);
+      box-shadow: 0 0 0 3px var(--warn-soft);
+    }
   }
 
   &__device {
@@ -226,6 +231,13 @@
     font-weight: 500;
     color: var(--text-muted);
     margin-left: 0.22rem;
+  }
+
+  &__note {
+    margin-top: 0.45rem;
+    font-size: 0.72rem;
+    line-height: 1.4;
+    color: var(--text-muted);
   }
 }
 
