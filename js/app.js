@@ -14,6 +14,7 @@ import {
   getHistoryStats,
   getStorageUsage,
   expandEvents,
+  updateSessionMeta,
 } from "./history.js";
 import {
   DEFAULT_VIDEO_STYLE,
@@ -67,6 +68,20 @@ const ui = {
   btnPause: $("btnPause"),
   btnResume: $("btnResume"),
   btnStop: $("btnStop"),
+  focusView: $("focusView"),
+  btnFocusEnter: $("btnFocusEnter"),
+  btnFocusExit: $("btnFocusExit"),
+  focusCount: $("focusCount"),
+  focusNps: $("focusNps"),
+  focusElapsed: $("focusElapsed"),
+  focusPill: $("focusPill"),
+  focusDot: $("focusDot"),
+  focusStatus: $("focusStatus"),
+  focusHint: $("focusHint"),
+  btnFocusRecord: $("btnFocusRecord"),
+  btnFocusPause: $("btnFocusPause"),
+  btnFocusResume: $("btnFocusResume"),
+  btnFocusStop: $("btnFocusStop"),
   btnExport: $("btnExport"),
   btnSaveVideo: $("btnSaveVideo"),
   btnSave: $("btnSave"),
@@ -96,7 +111,12 @@ const ui = {
   historyDetailBody: $("historyDetailBody"),
   detailDate: $("detailDate"),
   detailTitle: $("detailTitle"),
+  detailDescription: $("detailDescription"),
   detailGrid: $("detailGrid"),
+  detailNameInput: $("detailNameInput"),
+  detailDescriptionInput: $("detailDescriptionInput"),
+  sessionEditForm: $("sessionEditForm"),
+  btnDetailSaveMeta: $("btnDetailSaveMeta"),
   btnDetailExport: $("btnDetailExport"),
   btnDetailVideo: $("btnDetailVideo"),
   btnDetailDelete: $("btnDetailDelete"),
@@ -147,6 +167,8 @@ let sessionWallStart = null;
 let sessionSaved = false;
 let selectedHistoryId = null;
 let statsClockId = null;
+/** Giant in-page counter view; deliberately not the browser Fullscreen API. */
+let focusViewOpen = false;
 
 /** Active video-editor payload (current take or History session). */
 let videoEditor = {
@@ -226,6 +248,13 @@ function formatDateTime(ms) {
   });
 }
 
+/** Custom name if set, otherwise the familiar datetime label. */
+function sessionDisplayName(record) {
+  const custom = record?.name?.trim();
+  if (custom) return custom;
+  return formatDateTime(record?.savedAt ?? Date.now());
+}
+
 function formatDay(ms) {
   return new Date(ms).toLocaleDateString(undefined, {
     weekday: "long",
@@ -261,8 +290,10 @@ function processMessage(bytes, timeStamp) {
   if (!result) return;
 
   if (result.isNoteOn) {
-    ui.noteCount.textContent = formatCount(result.noteCount);
-    ui.statTotal.textContent = formatCount(result.noteCount);
+    const label = formatCount(result.noteCount);
+    ui.noteCount.textContent = label;
+    ui.statTotal.textContent = label;
+    if (ui.focusCount) ui.focusCount.textContent = label;
     flashCounter();
   }
   updateControls();
@@ -293,9 +324,12 @@ function handleDeviceMessage(event) {
 }
 
 function flashCounter() {
-  ui.noteCount.classList.remove("is-hit");
-  void ui.noteCount.offsetWidth; // restart the animation on rapid notes
-  ui.noteCount.classList.add("is-hit");
+  for (const el of [ui.noteCount, ui.focusCount]) {
+    if (!el) continue;
+    el.classList.remove("is-hit");
+    void el.offsetWidth; // restart the animation on rapid notes
+    el.classList.add("is-hit");
+  }
 }
 
 /**
@@ -321,12 +355,22 @@ function unlockAudio() {
 /* ------------------------------------------------------------------ display */
 
 function updateCounters() {
-  ui.noteCount.textContent = formatCount(session.noteCount);
-  ui.statTotal.textContent = formatCount(session.noteCount);
-  ui.statNps.textContent = formatNps(session.getLiveNps());
+  const notes = formatCount(session.noteCount);
+  const nps = formatNps(session.getLiveNps());
+  const elapsed = formatElapsed(session.getElapsedMs());
+
+  ui.noteCount.textContent = notes;
+  ui.statTotal.textContent = notes;
+  ui.statNps.textContent = nps;
   ui.statPeakNps.textContent = formatNps(session.peakNps);
-  ui.statElapsed.textContent = formatElapsed(session.getElapsedMs());
+  ui.statElapsed.textContent = elapsed;
   ui.eventMeta.textContent = `${formatCount(session.events.length)} events`;
+
+  if (focusViewOpen) {
+    if (ui.focusCount) ui.focusCount.textContent = notes;
+    if (ui.focusNps) ui.focusNps.textContent = nps;
+    if (ui.focusElapsed) ui.focusElapsed.textContent = elapsed;
+  }
 }
 
 function updateControls() {
@@ -352,7 +396,44 @@ function updateControls() {
     ui.recordingDot.classList.toggle("status-bar__dot--paused", paused);
   }
 
+  if (ui.btnFocusRecord) ui.btnFocusRecord.hidden = active;
+  if (ui.btnFocusPause) ui.btnFocusPause.hidden = !recording;
+  if (ui.btnFocusResume) ui.btnFocusResume.hidden = !paused;
+  if (ui.btnFocusStop) ui.btnFocusStop.hidden = !active;
+  if (ui.focusPill) {
+    ui.focusPill.hidden = !active;
+    ui.focusPill.classList.toggle("is-paused", paused);
+  }
+  if (ui.focusStatus) {
+    ui.focusStatus.textContent = paused ? "Paused" : "Recording";
+  }
+  if (ui.focusDot) {
+    ui.focusDot.classList.toggle("status-bar__dot--recording", recording);
+    ui.focusDot.classList.toggle("status-bar__dot--paused", paused);
+  }
+  if (ui.focusHint) {
+    ui.focusHint.textContent = active
+      ? "Space pauses or resumes · Esc stops the take"
+      : session.hasData
+        ? "Go back to save the take, export MIDI, or render a video."
+        : "Press Record or hit Space to start counting.";
+  }
+
   updateSaveButton(canPersist);
+}
+
+function setFocusView(open) {
+  if (!ui.focusView) return;
+  focusViewOpen = open;
+  ui.focusView.hidden = !open;
+  document.body.classList.toggle("is-focus-view", open);
+  if (open) {
+    updateCounters();
+    updateControls();
+    ui.btnFocusExit?.focus({ preventScroll: true });
+  } else {
+    ui.btnFocusEnter?.focus({ preventScroll: true });
+  }
 }
 
 function updateSaveButton(canPersist) {
@@ -761,7 +842,7 @@ function renderHistory() {
 
     const when = document.createElement("div");
     when.className = "session-card__when";
-    when.textContent = formatDateTime(record.savedAt);
+    when.append(document.createTextNode(sessionDisplayName(record)));
     if (record.exported) {
       const badge = document.createElement("span");
       badge.className = "session-card__badge";
@@ -782,6 +863,14 @@ function renderHistory() {
     ].join(" · ");
 
     card.append(when, notes, meta);
+
+    const blurb = record.description?.trim();
+    if (blurb) {
+      const desc = document.createElement("div");
+      desc.className = "session-card__blurb";
+      desc.textContent = blurb;
+      card.appendChild(desc);
+    }
     card.addEventListener("click", () => {
       selectedHistoryId = record.id;
       renderHistory();
@@ -804,7 +893,23 @@ function showHistoryDetail(record) {
   ui.historyDetailEmpty.hidden = true;
   ui.historyDetailBody.hidden = false;
   ui.detailDate.textContent = formatDay(record.startedAt);
-  ui.detailTitle.textContent = formatDateTime(record.savedAt);
+  ui.detailTitle.textContent = sessionDisplayName(record);
+
+  const description = record.description?.trim() ?? "";
+  if (ui.detailDescription) {
+    ui.detailDescription.hidden = !description;
+    ui.detailDescription.textContent = description;
+  }
+
+  const defaultName = formatDateTime(record.savedAt);
+  if (ui.detailNameInput) {
+    ui.detailNameInput.value = record.name?.trim() ?? "";
+    ui.detailNameInput.placeholder = defaultName;
+    ui.detailNameInput.dataset.sessionId = record.id;
+  }
+  if (ui.detailDescriptionInput) {
+    ui.detailDescriptionInput.value = record.description ?? "";
+  }
 
   const rows = [
     ["Notes", formatCount(record.noteCount)],
@@ -1218,6 +1323,13 @@ function bindUi() {
   ui.btnPause?.addEventListener("click", pauseRecording);
   ui.btnResume?.addEventListener("click", resumeRecording);
   ui.btnStop.addEventListener("click", stopRecording);
+
+  ui.btnFocusEnter?.addEventListener("click", () => setFocusView(true));
+  ui.btnFocusExit?.addEventListener("click", () => setFocusView(false));
+  ui.btnFocusRecord?.addEventListener("click", startRecording);
+  ui.btnFocusPause?.addEventListener("click", pauseRecording);
+  ui.btnFocusResume?.addEventListener("click", resumeRecording);
+  ui.btnFocusStop?.addEventListener("click", stopRecording);
   ui.btnExport.addEventListener("click", exportMidi);
   ui.btnSaveVideo?.addEventListener("click", openCurrentSessionVideo);
   ui.btnSave?.addEventListener("click", saveCurrentSession);
@@ -1238,6 +1350,29 @@ function bindUi() {
 
   ui.btnDetailExport?.addEventListener("click", () => {
     exportHistorySession(ui.btnDetailExport.dataset.sessionId);
+  });
+
+  ui.sessionEditForm?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const id =
+      ui.detailNameInput?.dataset.sessionId ||
+      ui.btnDetailDelete?.dataset.sessionId;
+    if (!id) return;
+
+    const updated = updateSessionMeta(id, {
+      name: ui.detailNameInput?.value ?? "",
+      description: ui.detailDescriptionInput?.value ?? "",
+    });
+    if (!updated) {
+      showToast("Could not update this session");
+      return;
+    }
+    renderHistory();
+    showToast(
+      updated.name?.trim()
+        ? `Saved “${updated.name.trim()}”`
+        : "Saved session details"
+    );
   });
 
   ui.btnDetailVideo?.addEventListener("click", () => {
@@ -1362,6 +1497,9 @@ function bindUi() {
     } else if (event.code === "Escape" && session.active) {
       event.preventDefault();
       stopRecording();
+    } else if (event.code === "Escape" && focusViewOpen) {
+      event.preventDefault();
+      setFocusView(false);
     } else if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "e") {
       event.preventDefault();
       exportMidi();

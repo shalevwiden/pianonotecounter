@@ -132,9 +132,29 @@
         <section class="hero-counter" aria-live="polite">
           <div class="hero-counter__label">Notes Played</div>
           <div class="hero-counter__value" id="noteCount">0</div>
-          <p class="hero-counter__hint" id="heroHint">
-            Press Record, then play your keyboard.
-          </p>
+          <div class="hero-counter__foot">
+            <p class="hero-counter__hint" id="heroHint">
+              Press Record, then play your keyboard.
+            </p>
+            <button
+              class="expand-btn"
+              id="btnFocusEnter"
+              type="button"
+              aria-label="Open focus view"
+              title="Focus view — giant counter"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.9"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+          </div>
         </section>
 
         <section class="stats" aria-label="Session statistics">
@@ -314,6 +334,41 @@
               <div class="session-detail__body" id="historyDetailBody" hidden>
                 <div class="session-detail__date" id="detailDate"></div>
                 <h2 class="session-detail__title" id="detailTitle"></h2>
+                <p class="session-detail__desc" id="detailDescription" hidden></p>
+
+                <form class="session-edit" id="sessionEditForm">
+                  <label class="session-edit__field">
+                    <span class="session-edit__label">Name</span>
+                    <input
+                      type="text"
+                      id="detailNameInput"
+                      class="session-edit__input"
+                      maxlength="80"
+                      autocomplete="off"
+                      placeholder="Leave blank to use the date"
+                    />
+                  </label>
+                  <label class="session-edit__field">
+                    <span class="session-edit__label">Description</span>
+                    <textarea
+                      id="detailDescriptionInput"
+                      class="session-edit__textarea"
+                      maxlength="400"
+                      rows="3"
+                      placeholder="Optional notes about this take"
+                    ></textarea>
+                  </label>
+                  <div class="session-edit__actions">
+                    <button
+                      class="btn btn--secondary btn--sm"
+                      id="btnDetailSaveMeta"
+                      type="submit"
+                    >
+                      Save details
+                    </button>
+                  </div>
+                </form>
+
                 <div class="session-detail__grid" id="detailGrid"></div>
                 <div class="session-detail__actions">
                   <button class="btn btn--secondary btn--sm" id="btnDetailExport" type="button">
@@ -556,6 +611,87 @@
         </div>
       </form>
     </dialog>
+
+    <section
+      class="focus"
+      id="focusView"
+      aria-label="Focus view"
+      aria-live="polite"
+      hidden
+    >
+      <button
+        class="focus__back"
+        id="btnFocusExit"
+        type="button"
+        aria-label="Back to dashboard"
+        title="Back to dashboard (Esc)"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            d="M15 5l-7 7 7 7"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+        <span>Back</span>
+      </button>
+
+      <div class="focus__pill" id="focusPill" hidden>
+        <span class="status-bar__dot status-bar__dot--recording" id="focusDot"></span>
+        <span id="focusStatus">Recording</span>
+      </div>
+
+      <div class="focus__stage">
+        <div class="focus__label">Notes Played</div>
+        <div class="focus__value" id="focusCount">0</div>
+
+        <div class="focus__stats">
+          <div class="focus__stat">
+            <div class="focus__stat-label">Notes / Sec</div>
+            <div class="focus__stat-value" id="focusNps">0.0</div>
+          </div>
+          <div class="focus__stat">
+            <div class="focus__stat-label">Elapsed</div>
+            <div class="focus__stat-value" id="focusElapsed">0:00.0</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="focus__controls">
+        <button class="btn btn--primary" id="btnFocusRecord" type="button">
+          <svg viewBox="0 0 16 16" aria-hidden="true">
+            <circle cx="8" cy="8" r="5" />
+          </svg>
+          Record
+        </button>
+        <button class="btn btn--secondary" id="btnFocusPause" type="button" hidden>
+          <svg viewBox="0 0 16 16" aria-hidden="true">
+            <rect x="4" y="3.5" width="2.75" height="9" rx="0.75" />
+            <rect x="9.25" y="3.5" width="2.75" height="9" rx="0.75" />
+          </svg>
+          Pause
+        </button>
+        <button class="btn btn--primary" id="btnFocusResume" type="button" hidden>
+          <svg viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M5 3.5v9l8-4.5-8-4.5z" fill="currentColor" />
+          </svg>
+          Resume
+        </button>
+        <button class="btn btn--danger" id="btnFocusStop" type="button" hidden>
+          <svg viewBox="0 0 16 16" aria-hidden="true">
+            <rect x="4" y="4" width="8" height="8" rx="1.5" />
+          </svg>
+          Stop
+        </button>
+      </div>
+
+      <p class="focus__hint" id="focusHint">
+        Go back to save the take, export MIDI, or render a video.
+      </p>
+    </section>
 
     <dialog class="modal modal--video" id="videoModal">
       <div class="modal__inner">

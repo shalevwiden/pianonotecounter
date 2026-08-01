@@ -23,6 +23,8 @@ const MAX_SESSIONS = 200;
  * @property {string} voice
  * @property {string} deviceName
  * @property {boolean} exported        true if this save was triggered by export
+ * @property {string} [name]           optional display name; blank → use savedAt default
+ * @property {string} [description]    optional notes; may be blank
  * @property {number} pauseCount
  * @property {Array<{ startMs: number, endMs: number }>} [pauseSpans]
  * @property {Array<[number, number, number, number]>} events
@@ -94,6 +96,9 @@ export function saveSession(draft) {
     voice: draft.voice ?? "piano",
     deviceName: draft.deviceName ?? "",
     exported: Boolean(draft.exported),
+    name: typeof draft.name === "string" ? draft.name.trim() : "",
+    description:
+      typeof draft.description === "string" ? draft.description.trim() : "",
     pauseCount: draft.pauseCount ?? draft.pauseSpans?.length ?? 0,
     pauseSpans: Array.isArray(draft.pauseSpans) ? draft.pauseSpans : [],
     events: compactEvents(draft.events ?? []),
@@ -133,6 +138,35 @@ export function getSession(id) {
 
 export function deleteSession(id) {
   writeAll(readAll().filter((session) => session.id !== id));
+}
+
+/**
+ * Update optional name / description without touching MIDI payload or stats.
+ * Empty strings clear the custom fields (name falls back to the datetime default).
+ * @param {string} id
+ * @param {{ name?: string, description?: string }} patch
+ * @returns {SavedSession | null}
+ */
+export function updateSessionMeta(id, patch) {
+  const sessions = readAll();
+  const index = sessions.findIndex((session) => session.id === id);
+  if (index < 0) return null;
+
+  const current = sessions[index];
+  const next = {
+    ...current,
+    name:
+      patch.name !== undefined
+        ? String(patch.name).trim()
+        : (current.name ?? ""),
+    description:
+      patch.description !== undefined
+        ? String(patch.description).trim()
+        : (current.description ?? ""),
+  };
+  sessions[index] = next;
+  writeAll(sessions);
+  return next;
 }
 
 export function clearHistory() {
