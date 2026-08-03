@@ -38,14 +38,14 @@ A connected instrument **always** plays and records. The source toggle only deci
 
 **Computer Keyboard** — the home row plays white keys starting at Middle C, and the row above holds the black keys in their natural gaps:
 
-| Keys | Purpose |
-| --- | --- |
-| `A S D F G H J K L ; '` | White keys, C4 upward |
-| `W E T Y U O P` | Black keys |
-| `Z` / `X` | Octave down / up (arrow keys also work) |
-| `Space` | Start, then pause / resume the take |
-| `Esc` | Stop the current take |
-| `⌘E` / `Ctrl+E` | Export the session as MIDI |
+| Keys                    | Purpose                                 |
+| ----------------------- | --------------------------------------- |
+| `A S D F G H J K L ; '` | White keys, C4 upward                   |
+| `W E T Y U O P`         | Black keys                              |
+| `Z` / `X`               | Octave down / up (arrow keys also work) |
+| `Space`                 | Start, then pause / resume the take     |
+| `Esc`                   | Stop the current take                   |
+| `⌘E` / `Ctrl+E`         | Export the session as MIDI              |
 
 Multiple keys can be held at once, key repeat is ignored, and every note lights up the on-screen 88-key piano. Notes sound through a built-in multi-voice synth (grand, Steinway, cinematic piano, harpsichord, electric piano, electric guitar, 80s synth), which can be muted with the Sound switch.
 
@@ -83,12 +83,12 @@ Everything stays in your browser's `localStorage` on this device — nothing is 
 
 A session stores its MIDI events in a compact `[timeMs, status, data1, data2]` tuple form, which is roughly four times smaller than a JSON object per event but still larger than the binary `.mid` you download:
 
-| Session | Downloaded `.mid` | In History |
-| --- | --- | --- |
-| 100 notes (~30 s) | ~1 KB | ~3 KB |
-| 1,000 notes (~4 min) | ~9 KB | ~36 KB |
-| 5,000 notes (~20 min) | ~44 KB | ~190 KB |
-| 20,000 notes (~80 min) | ~176 KB | ~770 KB |
+| Session                | Downloaded `.mid` | In History |
+| ---------------------- | ----------------- | ---------- |
+| 100 notes (~30 s)      | ~1 KB             | ~3 KB      |
+| 1,000 notes (~4 min)   | ~9 KB             | ~36 KB     |
+| 5,000 notes (~20 min)  | ~44 KB            | ~190 KB    |
+| 20,000 notes (~80 min) | ~176 KB           | ~770 KB    |
 
 Browsers cap an origin at roughly 5 MB, so expect a few dozen long takes before pressure. History keeps the 200 most recent sessions, and if a write hits the quota the oldest sessions drop their MIDI payloads first — metadata and stats survive, only re-export does not. Use **Clear all** in History to reclaim everything, or delete individual sessions.
 
