@@ -21,6 +21,10 @@
   <body class="landing">
     <div class="landing__noise" aria-hidden="true"></div>
 
+    <div class="landing-banner" role="note">
+      Built for pianists by pianists
+    </div>
+
     <header class="landing-nav">
       <a class="landing-nav__brand" href="#top">
         <span class="landing-nav__mark" aria-hidden="true">
@@ -60,16 +64,18 @@
         </div>
 
         <div class="landing-hero__content">
-          <p class="landing-hero__brand">Peak Notes</p>
-          <h1 class="landing-hero__title">
+          <p class="landing-hero__brand hero-rise" style="--rise-delay: 0.05s">
+            Peak Notes
+          </p>
+          <h1 class="landing-hero__title hero-rise" style="--rise-delay: 0.18s">
             Every note,<br />
             <em>counted.</em>
           </h1>
-          <p class="landing-hero__lead">
+          <p class="landing-hero__lead hero-rise" style="--rise-delay: 0.34s">
             A quiet studio for the browser — built for pianists who practice with
             intention and leave with a take worth keeping.
           </p>
-          <div class="landing-hero__actions">
+          <div class="landing-hero__actions hero-rise" style="--rise-delay: 0.48s">
             <a class="landing-btn landing-btn--primary" href="app.html">
               Enter the studio
             </a>
@@ -81,7 +87,7 @@
       </section>
 
       <section class="landing-section landing-section--manifesto" id="craft">
-        <div class="landing-section__inner reveal">
+        <div class="landing-section__inner reveal reveal--up">
           <p class="landing-eyebrow">The craft</p>
           <h2 class="landing-heading">
             Practice becomes visible<br />
@@ -97,7 +103,7 @@
       </section>
 
       <section class="landing-split">
-        <figure class="landing-split__visual reveal">
+        <figure class="landing-split__visual reveal reveal--left">
           <img
             src="assets/landing-detail-hammers.png"
             alt="Close-up of piano hammers and strings in cool studio light"
@@ -106,7 +112,7 @@
             loading="lazy"
           />
         </figure>
-        <div class="landing-split__text reveal">
+        <div class="landing-split__text reveal reveal--right">
           <p class="landing-eyebrow">For the instrument</p>
           <h2 class="landing-heading landing-heading--sm">
             Tuned for real pianos,<br />
@@ -128,7 +134,7 @@
       </section>
 
       <section class="landing-section landing-section--play" id="play">
-        <div class="landing-section__inner reveal">
+        <div class="landing-section__inner reveal reveal--up">
           <p class="landing-eyebrow">Touch</p>
           <h2 class="landing-heading">
             One octave.<br />
@@ -140,7 +146,12 @@
             studio.
           </p>
 
-          <div class="landing-octave" id="landingOctave" role="group" aria-label="One octave piano">
+          <div
+            class="landing-octave"
+            id="landingOctave"
+            role="group"
+            aria-label="One octave piano"
+          >
             <!-- filled by js/landing.js -->
           </div>
           <p class="landing-octave__hint" id="octaveHint">Click any key to begin</p>
@@ -154,7 +165,7 @@
       </section>
 
       <section class="landing-section landing-section--studio" id="studio">
-        <div class="landing-section__inner reveal">
+        <div class="landing-section__inner reveal reveal--up">
           <p class="landing-eyebrow">The studio</p>
           <h2 class="landing-heading">
             Leave with more<br />
@@ -163,7 +174,7 @@
         </div>
 
         <div class="landing-features">
-          <article class="landing-feature reveal">
+          <article class="landing-feature reveal reveal--up" style="--reveal-delay: 0s">
             <div class="landing-feature__num">01</div>
             <h3 class="landing-feature__title">Live counting</h3>
             <p>
@@ -172,7 +183,7 @@
               — then open Focus for a counter that fills the screen.
             </p>
           </article>
-          <article class="landing-feature reveal">
+          <article class="landing-feature reveal reveal--up" style="--reveal-delay: 0.08s">
             <div class="landing-feature__num">02</div>
             <h3 class="landing-feature__title">Standard MIDI</h3>
             <p>
@@ -181,7 +192,7 @@
               Held notes closed cleanly. Your take, portable.
             </p>
           </article>
-          <article class="landing-feature reveal">
+          <article class="landing-feature reveal reveal--up" style="--reveal-delay: 0.16s">
             <div class="landing-feature__num">03</div>
             <h3 class="landing-feature__title">Silent counter film</h3>
             <p>
@@ -190,7 +201,7 @@
               reels, lessons, and proof of practice.
             </p>
           </article>
-          <article class="landing-feature reveal">
+          <article class="landing-feature reveal reveal--up" style="--reveal-delay: 0.24s">
             <div class="landing-feature__num">04</div>
             <h3 class="landing-feature__title">History on device</h3>
             <p>
@@ -203,7 +214,7 @@
       </section>
 
       <section class="landing-portrait">
-        <div class="landing-portrait__frame reveal">
+        <div class="landing-portrait__frame reveal reveal--scale">
           <img
             src="assets/landing-keys-float.png"
             alt="Ivory and ebony piano keys floating in soft blue light"
@@ -212,7 +223,7 @@
             loading="lazy"
           />
         </div>
-        <blockquote class="landing-quote reveal">
+        <blockquote class="landing-quote reveal reveal--right">
           <p>
             “Discipline is quiet. Peak Notes simply makes the quiet
             <em>count.</em>”
@@ -221,7 +232,7 @@
       </section>
 
       <section class="landing-cta">
-        <div class="landing-cta__panel reveal">
+        <div class="landing-cta__panel reveal reveal--up">
           <p class="landing-eyebrow">Begin</p>
           <h2 class="landing-heading landing-heading--cta">
             Your next take<br />

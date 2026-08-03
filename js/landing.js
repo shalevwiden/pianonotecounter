@@ -25,7 +25,11 @@ const BLACK_LEFT = {
   70: 82.2,
 };
 
+/** C major arpeggio across the octave for the reveal wave (visual + optional soft tones). */
+const WAVE_MIDI = [60, 64, 67, 71, 67, 64, 60];
+
 let audioCtx = null;
+let wavePlayed = false;
 
 function ensureAudio() {
   if (!audioCtx) {
@@ -41,17 +45,18 @@ function midiToHz(midi) {
   return 440 * 2 ** ((midi - 69) / 12);
 }
 
-function playNote(midi) {
+function playNote(midi, { soft = false } = {}) {
   const ctx = ensureAudio();
   if (!ctx) return;
 
   const now = ctx.currentTime;
   const freq = midiToHz(midi);
+  const peak = soft ? 0.08 : 0.22;
 
   const master = ctx.createGain();
   master.gain.setValueAtTime(0.0001, now);
-  master.gain.exponentialRampToValueAtTime(0.22, now + 0.012);
-  master.gain.exponentialRampToValueAtTime(0.0001, now + 1.35);
+  master.gain.exponentialRampToValueAtTime(peak, now + 0.012);
+  master.gain.exponentialRampToValueAtTime(0.0001, now + (soft ? 0.55 : 1.35));
   master.connect(ctx.destination);
 
   const filter = ctx.createBiquadFilter();
@@ -74,7 +79,7 @@ function playNote(midi) {
     osc.connect(g);
     g.connect(filter);
     osc.start(now);
-    osc.stop(now + 1.4);
+    osc.stop(now + (soft ? 0.6 : 1.4));
   }
 }
 
@@ -84,39 +89,53 @@ function buildOctave() {
   if (!root) return;
 
   root.innerHTML = "";
+  const glow = document.createElement("div");
+  glow.className = "landing-octave__glow";
+  glow.setAttribute("aria-hidden", "true");
+
   const whites = document.createElement("div");
   whites.className = "landing-octave__whites";
   const blacks = document.createElement("div");
   blacks.className = "landing-octave__blacks";
 
+  let whiteIndex = 0;
   for (const note of NOTES.filter((n) => !n.black)) {
     const key = document.createElement("button");
     key.type = "button";
     key.className = "landing-octave__key landing-octave__key--white";
     key.dataset.midi = String(note.midi);
+    key.style.setProperty("--key-delay", `${0.05 + whiteIndex * 0.055}s`);
     key.setAttribute("aria-label", `${note.name}4`);
     key.innerHTML = `<span>${note.name}</span>`;
     whites.appendChild(key);
+    whiteIndex += 1;
   }
 
+  let blackIndex = 0;
   for (const note of NOTES.filter((n) => n.black)) {
     const key = document.createElement("button");
     key.type = "button";
     key.className = "landing-octave__key landing-octave__key--black";
     key.dataset.midi = String(note.midi);
     key.style.left = `${BLACK_LEFT[note.midi]}%`;
+    key.style.setProperty("--key-delay", `${0.18 + blackIndex * 0.07}s`);
     key.setAttribute("aria-label", `${note.name}4`);
     blacks.appendChild(key);
+    blackIndex += 1;
   }
 
-  root.append(whites, blacks);
+  root.append(glow, whites, blacks);
 
-  const press = (key) => {
+  const press = (key, { soft = false } = {}) => {
     const midi = Number(key.dataset.midi);
     key.classList.add("is-active");
-    playNote(midi);
-    if (hint) hint.textContent = "Keep going — or open the full studio";
-    window.setTimeout(() => key.classList.remove("is-active"), 160);
+    if (!soft) key.classList.add("is-wave");
+    playNote(midi, { soft });
+    if (hint && !soft) hint.textContent = "Keep going — or open the full studio";
+    window.setTimeout(() => {
+      key.classList.remove("is-active");
+      key.classList.remove("is-wave");
+    }, soft ? 140 : 180);
   };
 
   root.addEventListener("pointerdown", (event) => {
@@ -125,6 +144,63 @@ function buildOctave() {
     event.preventDefault();
     press(key);
   });
+
+  observeOctave(root, press);
+}
+
+function runKeyWave(root, press) {
+  if (wavePlayed) return;
+  wavePlayed = true;
+
+  const byMidi = new Map(
+    [...root.querySelectorAll(".landing-octave__key")].map((el) => [
+      Number(el.dataset.midi),
+      el,
+    ])
+  );
+
+  WAVE_MIDI.forEach((midi, index) => {
+    window.setTimeout(() => {
+      const key = byMidi.get(midi);
+      if (!key) return;
+      // Visual cascade only unless the user has already unlocked audio via a click.
+      if (audioCtx && audioCtx.state === "running") {
+        press(key, { soft: true });
+      } else {
+        key.classList.add("is-wave", "is-active");
+        window.setTimeout(() => {
+          key.classList.remove("is-wave", "is-active");
+        }, 160);
+      }
+    }, 420 + index * 95);
+  });
+}
+
+function observeOctave(root, press) {
+  const playSection = document.getElementById("play");
+  if (!playSection) {
+    root.classList.add("is-assembled");
+    return;
+  }
+
+  if (!("IntersectionObserver" in window)) {
+    root.classList.add("is-assembled");
+    return;
+  }
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        root.classList.add("is-assembled");
+        window.setTimeout(() => runKeyWave(root, press), 520);
+        observer.disconnect();
+      }
+    },
+    { threshold: 0.35 }
+  );
+
+  observer.observe(playSection);
 }
 
 function initReveals() {
@@ -143,7 +219,7 @@ function initReveals() {
         }
       }
     },
-    { threshold: 0.16, rootMargin: "0px 0px -8% 0px" }
+    { threshold: 0.14, rootMargin: "0px 0px -6% 0px" }
   );
 
   nodes.forEach((el) => observer.observe(el));
