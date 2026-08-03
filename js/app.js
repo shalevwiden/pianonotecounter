@@ -1546,5 +1546,8 @@ renderHistory();
 renderStats();
 initMidi();
 
+const appYear = document.getElementById("appYear");
+if (appYear) appYear.textContent = String(new Date().getFullYear());
+
 requestAnimationFrame(() => piano.scrollToNote(keyboard.baseNote));
 requestAnimationFrame(tick);

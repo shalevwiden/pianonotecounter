@@ -111,11 +111,12 @@ body {
   }
 
   &__title {
-    font-family: $font-display;
-    font-size: 1.05rem;
+    font-family: $font-serif;
+    font-size: 1.2rem;
     font-weight: 600;
+    font-style: italic;
     letter-spacing: -0.02em;
-    line-height: 1.2;
+    line-height: 1.15;
   }
 
   &__subtitle {
@@ -229,18 +230,112 @@ body {
 .footer {
   position: relative;
   z-index: 1;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 1rem;
-  padding: 1.1rem 2.5rem 1.6rem;
+  padding: 1.35rem 2.5rem 1.75rem;
   font-size: 0.75rem;
   color: var(--text-muted);
+  border-top: 1px solid var(--border);
+
+  &__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem 1.5rem;
+  }
+
+  &__start {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    flex-wrap: wrap;
+  }
+
+  &__brand {
+    font-family: $font-serif;
+    font-style: italic;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+
+  &__status {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1.1rem;
+    min-width: 0;
+  }
 
   &__mono {
     font-family: $font-mono;
     font-size: 0.7rem;
+  }
+
+  &__copy {
+    margin: 0;
+    max-width: 42ch;
+    line-height: 1.5;
+    flex: 1 1 220px;
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-left: auto;
+    flex-wrap: wrap;
+  }
+
+  &__home {
+    color: var(--accent-strong);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.8rem;
+
+    &:hover {
+      color: var(--text);
+    }
+  }
+}
+
+.social-links {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+
+  &__item {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-secondary);
+    display: grid;
+    place-items: center;
+    transition: color 0.2s $ease-out, border-color 0.2s $ease-out,
+      background 0.2s $ease-out, transform 0.2s $ease-out;
+
+    svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    &:hover {
+      color: var(--accent-strong);
+      border-color: var(--border-strong);
+      background: var(--surface-hover);
+      transform: translateY(-1px);
+    }
+  }
+
+  &--lg .social-links__item {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+
+    svg {
+      width: 20px;
+      height: 20px;
+    }
   }
 }
 

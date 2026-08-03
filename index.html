@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -22,7 +22,7 @@
     <div class="landing__noise" aria-hidden="true"></div>
 
     <div class="landing-banner" role="note">
-      Built for pianists by pianists
+      Built by pianists for pianists
     </div>
 
     <header class="landing-nav">
@@ -48,6 +48,41 @@
         <a href="#studio">Studio</a>
       </nav>
       <a class="landing-nav__cta" href="app.html">Open app</a>
+      <button
+        class="landing-theme"
+        id="landingThemeToggle"
+        type="button"
+        aria-label="Toggle light and dark mode"
+        title="Toggle theme"
+      >
+        <svg class="landing-theme__moon" viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            d="M21 14.5A8.5 8.5 0 1 1 9.5 3 7 7 0 0 0 21 14.5z"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+        <svg class="landing-theme__sun" viewBox="0 0 24 24" aria-hidden="true">
+          <circle
+            cx="12"
+            cy="12"
+            r="4"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+          />
+          <path
+            d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+          />
+        </svg>
+      </button>
     </header>
 
     <main id="top">
@@ -137,14 +172,9 @@
         <div class="landing-section__inner reveal reveal--up">
           <p class="landing-eyebrow">Touch</p>
           <h2 class="landing-heading">
-            One octave.<br />
-            <em>No setup.</em>
+            Piano is simply<br />
+            <em>fun</em>
           </h2>
-          <p class="landing-copy landing-copy--center">
-            Click a key. Hear a note. This is Peak Notes in miniature — the same
-            quiet confidence waiting for your full instrument upstairs in the
-            studio.
-          </p>
 
           <div
             class="landing-octave"
@@ -252,7 +282,60 @@
     </main>
 
     <footer class="landing-footer">
-      <div class="landing-footer__brand">Peak Notes</div>
+      <div class="landing-footer__start">
+        <div class="landing-footer__brand">Peak Notes</div>
+        <div class="social-links social-links--lg" aria-label="Social">
+          <a
+            class="social-links__item"
+            href="https://www.google.com/search?q=piano+is+awesome"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="YouTube"
+            title="YouTube"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M22.5 7.2a3 3 0 0 0-2.1-2.1C18.6 4.6 12 4.6 12 4.6s-6.6 0-8.4.5A3 3 0 0 0 1.5 7.2 31.5 31.5 0 0 0 1 12a31.5 31.5 0 0 0 .5 4.8 3 3 0 0 0 2.1 2.1c1.8.5 8.4.5 8.4.5s6.6 0 8.4-.5a3 3 0 0 0 2.1-2.1A31.5 31.5 0 0 0 23 12a31.5 31.5 0 0 0-.5-4.8z"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linejoin="round"
+              />
+              <path d="M10 9.2 15.2 12 10 14.8V9.2z" fill="currentColor" />
+            </svg>
+          </a>
+          <a
+            class="social-links__item"
+            href="https://www.google.com/search?q=piano+is+awesome"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Instagram"
+            title="Instagram"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <rect
+                x="3.5"
+                y="3.5"
+                width="17"
+                height="17"
+                rx="5"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+              />
+              <circle
+                cx="12"
+                cy="12"
+                r="4"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+              />
+              <circle cx="17.4" cy="6.6" r="1.1" fill="currentColor" />
+            </svg>
+          </a>
+        </div>
+      </div>
       <p class="landing-footer__copy">
         © <span id="year"></span> Peak Notes. Crafted for pianists who keep score.
         All practice data stays on your device.

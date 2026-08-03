@@ -7,8 +7,8 @@
   --void: #07080c;
   --void-soft: #0e1018;
   --ivory: #efeae2;
-  --blue: #5b8def;
-  --blue-deep: #2f5fbf;
+  --blue: #8eb4d8;
+  --blue-deep: #5a87b5;
   --line: rgba(244, 241, 234, 0.12);
   --banner-h: 2rem;
   --nav-h: 4.25rem;
@@ -38,9 +38,9 @@
   height: var(--banner-h);
   display: grid;
   place-items: center;
-  background: linear-gradient(90deg, #101522, #1a2744 45%, #101522);
-  border-bottom: 1px solid rgba(91, 141, 239, 0.28);
-  color: rgba(244, 241, 234, 0.78);
+  background: #2a2d33;
+  border-bottom: 1px solid #1c1e22;
+  color: rgba(244, 241, 234, 0.82);
   font-family: "DM Sans", system-ui, sans-serif;
   font-style: normal;
   font-size: 0.72rem;
@@ -152,6 +152,44 @@
   }
 }
 
+.landing-theme {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--ink-muted);
+  display: grid;
+  place-items: center;
+  transition: color 0.2s $ease-out, border-color 0.2s $ease-out,
+    background 0.2s $ease-out;
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  &__sun {
+    display: none;
+  }
+
+  &:hover {
+    color: var(--ink);
+    border-color: rgba(244, 241, 234, 0.28);
+    background: rgba(255, 255, 255, 0.06);
+  }
+}
+
+html[data-theme="light"] .landing-theme {
+  .landing-theme__moon {
+    display: none;
+  }
+
+  .landing-theme__sun {
+    display: block;
+  }
+}
+
 .landing-hero {
   position: relative;
   z-index: 1;
@@ -178,34 +216,15 @@
       display: block;
       transform: scale(1.04);
       animation: landing-ken 22s $ease-out both;
-      filter: saturate(0.85) contrast(1.08) brightness(0.92)
-        hue-rotate(198deg) sepia(0.18);
+      filter: brightness(0.42);
     }
   }
 
   &__veil {
     position: absolute;
     inset: 0;
-    background:
-      radial-gradient(
-        ellipse at 50% 42%,
-        rgba(20, 40, 90, 0.2) 0%,
-        rgba(7, 8, 12, 0.5) 48%,
-        rgba(7, 8, 12, 0.94) 100%
-      ),
-      linear-gradient(
-        180deg,
-        rgba(7, 8, 12, 0.55) 0%,
-        rgba(12, 24, 56, 0.28) 35%,
-        rgba(7, 8, 12, 0.78) 78%,
-        rgba(7, 8, 12, 0.97) 100%
-      ),
-      linear-gradient(
-        0deg,
-        transparent 40%,
-        rgba(59, 110, 200, 0.18) 100%
-      );
-    mix-blend-mode: normal;
+    // Flat darken only — no radial vignette.
+    background: rgba(0, 0, 0, 0.28);
   }
 
   &__content {
@@ -807,33 +826,162 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 1rem 1.5rem;
   padding: 1.75rem clamp(1.25rem, 5vw, 4.5rem) 2.25rem;
   border-top: 1px solid var(--line);
   color: var(--ink-faint);
   font-size: 0.82rem;
 
+  &__start {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    flex-wrap: wrap;
+  }
+
   &__brand {
     font-family: "Cormorant Garamond", serif;
     font-style: italic;
-    font-size: 1.2rem;
+    font-size: 1.35rem;
     color: var(--ink-muted);
   }
 
   &__copy {
     max-width: 48ch;
     line-height: 1.5;
+    flex: 1 1 240px;
   }
 
   &__link {
     color: var(--blue);
     text-decoration: none;
     font-weight: 500;
+    margin-left: auto;
 
     &:hover {
       color: var(--ink);
     }
   }
+
+  .social-links__item {
+    background: transparent;
+    border-color: var(--line);
+    color: var(--ink-muted);
+
+    &:hover {
+      color: var(--blue);
+      border-color: color-mix(in srgb, var(--blue) 45%, transparent);
+      background: color-mix(in srgb, var(--blue) 10%, transparent);
+    }
+  }
+}
+
+/* Light theme for the marketing page — shares html[data-theme] with the studio */
+html[data-theme="light"] .landing {
+  --ink: #12151c;
+  --ink-muted: rgba(18, 21, 28, 0.68);
+  --ink-faint: rgba(18, 21, 28, 0.48);
+  --void: #eceff3;
+  --void-soft: #f7f8fa;
+  --ivory: #f4f1ea;
+  --blue: #3d719e;
+  --blue-deep: #2a557a;
+  --line: rgba(45, 70, 100, 0.14);
+  color-scheme: light;
+}
+
+html[data-theme="light"] .landing-nav.is-scrolled {
+  background: rgba(236, 239, 243, 0.92);
+}
+
+html[data-theme="light"] .landing-nav:not(.is-scrolled) {
+  .landing-nav__name,
+  .landing-nav__links a,
+  .landing-theme {
+    color: rgba(244, 241, 234, 0.88);
+  }
+
+  .landing-nav__links a:hover,
+  .landing-theme:hover {
+    color: #fff;
+  }
+
+  .landing-nav__cta {
+    color: #f4f1ea;
+    border-color: rgba(244, 241, 234, 0.3);
+    background: rgba(255, 255, 255, 0.08);
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.14);
+      border-color: rgba(244, 241, 234, 0.45);
+    }
+  }
+}
+
+html[data-theme="light"] .landing-nav__mark {
+  box-shadow: 0 8px 24px rgba(61, 113, 158, 0.28);
+}
+
+html[data-theme="light"] .landing-hero__media img {
+  filter: brightness(0.38);
+}
+
+html[data-theme="light"] .landing-hero__veil {
+  background: rgba(0, 0, 0, 0.32);
+}
+
+html[data-theme="light"] .landing-hero__brand {
+  color: #8eb4d8;
+}
+
+html[data-theme="light"] .landing-hero__title {
+  color: #f4f1ea;
+
+  em {
+    color: #8eb4d8;
+  }
+}
+
+html[data-theme="light"] .landing-hero__lead {
+  color: rgba(244, 241, 234, 0.72);
+}
+
+html[data-theme="light"] .landing-btn--primary {
+  background: #3d719e;
+  color: #fff;
+
+  &:hover {
+    background: #2a557a;
+  }
+}
+
+html[data-theme="light"] .landing-btn--ghost {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(244, 241, 234, 0.28);
+  color: #f4f1ea;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.16);
+    border-color: rgba(244, 241, 234, 0.42);
+  }
+}
+
+html[data-theme="light"] .landing-feature {
+  background: var(--void-soft);
+}
+
+html[data-theme="light"] .landing-features {
+  background: var(--line);
+}
+
+html[data-theme="light"] .landing-cta__panel {
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(61, 113, 158, 0.12), transparent 60%),
+    var(--void-soft);
+}
+
+html[data-theme="light"] .landing-octave__studio {
+  color: #3d719e;
 }
 
 .reveal {

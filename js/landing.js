@@ -238,9 +238,33 @@ function initNavScroll() {
   window.addEventListener("scroll", onScroll, { passive: true });
 }
 
+const THEME_KEY = "psr-theme";
+
+function setLandingTheme(theme) {
+  document.documentElement.setAttribute("data-theme", theme);
+  localStorage.setItem(THEME_KEY, theme);
+}
+
+function initTheme() {
+  const saved = localStorage.getItem(THEME_KEY);
+  if (saved === "light" || saved === "dark") {
+    setLandingTheme(saved);
+  } else {
+    const prefersLight = window.matchMedia("(prefers-color-scheme: light)").matches;
+    setLandingTheme(prefersLight ? "light" : "dark");
+  }
+
+  const toggle = document.getElementById("landingThemeToggle");
+  toggle?.addEventListener("click", () => {
+    const current = document.documentElement.getAttribute("data-theme");
+    setLandingTheme(current === "dark" ? "light" : "dark");
+  });
+}
+
 const year = document.getElementById("year");
 if (year) year.textContent = String(new Date().getFullYear());
 
+initTheme();
 buildOctave();
 initReveals();
 initNavScroll();

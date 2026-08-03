@@ -125,10 +125,11 @@
   animation: fade-up 0.8s $ease-out 0.12s both;
 
   &__label {
-    font-family: $font-display;
-    font-size: 0.8125rem;
+    font-family: $font-serif;
+    font-size: 0.95rem;
     font-weight: 500;
-    letter-spacing: 0.24em;
+    font-style: italic;
+    letter-spacing: 0.18em;
     text-transform: uppercase;
     color: var(--text-muted);
     margin-bottom: 0.7rem;
