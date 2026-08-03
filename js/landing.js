@@ -131,7 +131,10 @@ function buildOctave() {
     key.classList.add("is-active");
     if (!soft) key.classList.add("is-wave");
     playNote(midi, { soft });
-    if (hint && !soft) hint.textContent = "Keep going — or open the full studio";
+    if (hint && !soft) {
+      hint.innerHTML =
+        'Keep going — or <a class="landing-octave__studio" href="app.html">open the full studio</a>';
+    }
     window.setTimeout(() => {
       key.classList.remove("is-active");
       key.classList.remove("is-wave");
