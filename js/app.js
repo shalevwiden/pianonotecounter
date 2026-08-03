@@ -313,11 +313,21 @@ function handleDeviceMessage(event) {
     synth.noteOn(note, data[2]);
     ui.nowPlaying.textContent = noteName(note);
   } else if (status === 0x80 || (status === 0x90 && data[2] === 0)) {
-    piano.setActive(note, false);
+    // Keep the key lit while the damper pedal is holding the note.
+    if (!synth.sustain) piano.setActive(note, false);
     synth.noteOff(note);
     if (piano.activeNotes.size === 0) ui.nowPlaying.textContent = "—";
-  } else if (status === 0xb0 && note === 64) {
-    synth.setSustain(data[2] >= 64);
+  } else if (status === 0xb0 && data.length >= 3 && note === 64) {
+    // CC64 damper / sustain pedal (half-pedal values treated as on at ≥ 64).
+    unlockAudio();
+    const down = data[2] >= 64;
+    const released = synth.setSustain(down);
+    for (const releasedNote of released) {
+      piano.setActive(releasedNote, false);
+    }
+    if (!down && piano.activeNotes.size === 0) {
+      ui.nowPlaying.textContent = "—";
+    }
   }
 
   processMessage(data, event.timeStamp);
@@ -640,7 +650,7 @@ function exportMidi() {
   )}${pad(stamp.getSeconds())}.mid`;
 
   const bytes = buildMidiFile(session.events, {
-    trackName: "Piano Session Recorder",
+    trackName: "Peak Notes",
     bpm: 120,
   });
 
@@ -962,7 +972,7 @@ function exportHistorySession(id) {
   )}${pad(stamp.getSeconds())}.mid`;
 
   const bytes = buildMidiFile(expandEvents(record.events), {
-    trackName: "Piano Session Recorder",
+    trackName: "Peak Notes",
     bpm: 120,
   });
   downloadMidi(bytes, filename);

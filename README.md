@@ -1,6 +1,8 @@
-# Piano Session Recorder
+# Peak Notes
 
 A polished web app for recording piano performances. Play a USB MIDI instrument or your computer keyboard, watch a live note counter, and export a Standard MIDI File you can open in Synthesia.
+
+The marketing site lives at `index.html`. The studio app is `app.html`.
 
 Tested with a **Yamaha P-145BT** over USB MIDI in Chrome.
 

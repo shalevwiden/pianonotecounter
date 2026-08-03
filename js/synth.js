@@ -117,18 +117,20 @@ function connectPartials(ctx, frequency, partials, destination) {
   return oscillators;
 }
 
-function scheduleAmp(envelope, now, peak, attack, decay, sustainLevel, sustainTime) {
+/**
+ * Attack → decay to sustain plateau → slow natural decay while the damper is open
+ * (key held or sustain pedal down). Key/pedal release calls _release() to cut short.
+ */
+function scheduleAmp(envelope, now, peak, attack, decay, sustainLevel, naturalDecay = 0) {
   envelope.gain.cancelScheduledValues(now);
   envelope.gain.setValueAtTime(0.0001, now);
   envelope.gain.exponentialRampToValueAtTime(Math.max(0.0002, peak), now + attack);
-  envelope.gain.exponentialRampToValueAtTime(
-    Math.max(0.0002, peak * sustainLevel),
-    now + attack + decay
-  );
-  if (sustainTime > 0) {
+  const sustain = Math.max(0.0002, peak * sustainLevel);
+  envelope.gain.exponentialRampToValueAtTime(sustain, now + attack + decay);
+  if (naturalDecay > 0) {
     envelope.gain.exponentialRampToValueAtTime(
-      Math.max(0.0002, peak * sustainLevel * 0.35),
-      now + attack + decay + sustainTime
+      0.0002,
+      now + attack + decay + naturalDecay
     );
   }
 }
@@ -226,11 +228,16 @@ export class PianoSynth {
   }
 
   setSustain(down) {
-    this.sustain = down;
-    if (down) return;
+    const wasDown = this.sustain;
+    this.sustain = Boolean(down);
+    if (this.sustain) return [];
+
+    // Pedal up: finally release every note that ended while the damper was open.
     const release = this._defaultRelease();
-    for (const note of this.pendingRelease) this._release(note, release);
+    const notes = Array.from(this.pendingRelease);
     this.pendingRelease.clear();
+    for (const note of notes) this._release(note, release);
+    return wasDown ? notes : [];
   }
 
   _defaultRelease() {
@@ -247,8 +254,23 @@ export class PianoSynth {
       case "steinway":
         return 0.7;
       default:
-        return 0.35;
+        return 0.45;
     }
+  }
+
+  /**
+   * Keep a released note ringing under the damper pedal with a slow string decay.
+   */
+  _holdWhileSustained(note) {
+    const voice = this.voices.get(note);
+    if (!voice || !this.ctx) return;
+
+    const now = this.ctx.currentTime;
+    const gain = voice.envelope.gain;
+    const current = Math.max(0.0001, gain.value);
+    gain.cancelScheduledValues(now);
+    gain.setValueAtTime(current, now);
+    gain.exponentialRampToValueAtTime(0.0002, now + 16);
   }
 
   noteOn(note, velocity = 100) {
@@ -306,7 +328,7 @@ export class PianoSynth {
     );
 
     const peak = 0.28 * level;
-    scheduleAmp(envelope, now, peak, 0.006, 0.85, 0.28, 3.2);
+    scheduleAmp(envelope, now, peak, 0.006, 0.85, 0.32, 16);
 
     const oscillators = connectPartials(
       ctx,
@@ -334,7 +356,7 @@ export class PianoSynth {
     );
 
     const peak = 0.3 * level;
-    scheduleAmp(envelope, now, peak, 0.01, 1.1, 0.34, 5);
+    scheduleAmp(envelope, now, peak, 0.01, 1.1, 0.38, 20);
 
     const oscillators = connectPartials(
       ctx,
@@ -370,7 +392,7 @@ export class PianoSynth {
     );
 
     const peak = 0.26 * level;
-    scheduleAmp(envelope, now, peak, 0.002, 0.12, 0.08, 0.35);
+    scheduleAmp(envelope, now, peak, 0.002, 0.12, 0.08, 0.5);
 
     const oscillators = connectPartials(
       ctx,
@@ -419,7 +441,7 @@ export class PianoSynth {
     tone.connect(tremolo);
 
     const peak = 0.32 * level;
-    scheduleAmp(envelope, now, peak, 0.004, 0.55, 0.22, 2.8);
+    scheduleAmp(envelope, now, peak, 0.004, 0.55, 0.28, 12);
     tremolo.connect(envelope);
 
     return {
@@ -456,7 +478,7 @@ export class PianoSynth {
     drive.connect(filter);
 
     const peak = 0.22 * level;
-    scheduleAmp(envelope, now, peak, 0.008, 0.35, 0.45, 1.6);
+    scheduleAmp(envelope, now, peak, 0.008, 0.35, 0.5, 8);
     filter.connect(envelope);
 
     return { oscillators, extras: [drive, filter] };
@@ -490,7 +512,7 @@ export class PianoSynth {
     }
 
     const peak = 0.24 * level;
-    scheduleAmp(envelope, now, peak, 0.04, 0.45, 0.55, 2.5);
+    scheduleAmp(envelope, now, peak, 0.04, 0.45, 0.6, 14);
     filter.connect(envelope);
 
     return { oscillators, extras: [filter] };
@@ -499,6 +521,7 @@ export class PianoSynth {
   noteOff(note) {
     if (this.sustain) {
       this.pendingRelease.add(note);
+      this._holdWhileSustained(note);
       return;
     }
     this._release(note, this._defaultRelease());
