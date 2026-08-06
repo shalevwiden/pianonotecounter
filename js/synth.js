@@ -118,21 +118,22 @@ function connectPartials(ctx, frequency, partials, destination) {
 }
 
 /**
- * Attack → decay to sustain plateau → slow natural decay while the damper is open
- * (key held or sustain pedal down). Key/pedal release calls _release() to cut short.
+ * Attack → decay to a held sustain plateau.
+ *
+ * The plateau stays up until noteOff / pedal logic changes it. We intentionally
+ * do NOT auto-fade while the key is down — that made damper-pedal holds die
+ * early, and cancelScheduledValues + AudioParam.value often snapped the gain
+ * back near silence when the pedal tried to take over.
+ *
+ * @returns {number} hold level used later for pedal / key release
  */
-function scheduleAmp(envelope, now, peak, attack, decay, sustainLevel, naturalDecay = 0) {
+function scheduleAmp(envelope, now, peak, attack, decay, sustainLevel) {
+  const hold = Math.max(0.0002, peak * sustainLevel);
   envelope.gain.cancelScheduledValues(now);
   envelope.gain.setValueAtTime(0.0001, now);
   envelope.gain.exponentialRampToValueAtTime(Math.max(0.0002, peak), now + attack);
-  const sustain = Math.max(0.0002, peak * sustainLevel);
-  envelope.gain.exponentialRampToValueAtTime(sustain, now + attack + decay);
-  if (naturalDecay > 0) {
-    envelope.gain.exponentialRampToValueAtTime(
-      0.0002,
-      now + attack + decay + naturalDecay
-    );
-  }
+  envelope.gain.exponentialRampToValueAtTime(hold, now + attack + decay);
+  return hold;
 }
 
 export class PianoSynth {
@@ -258,8 +259,28 @@ export class PianoSynth {
     }
   }
 
+  /** Slow string decay while the damper pedal is holding a released note. */
+  _pedalDecayTime() {
+    switch (this.voiceId) {
+      case "harpsichord":
+        return 0.35;
+      case "eguitar":
+        return 4;
+      case "epiano":
+        return 8;
+      case "eighties":
+        return 10;
+      case "cinematic":
+      case "steinway":
+        return 16;
+      default:
+        return 14;
+    }
+  }
+
   /**
-   * Keep a released note ringing under the damper pedal with a slow string decay.
+   * Keep a released note ringing under the damper pedal at its hold level.
+   * Decay only happens when the pedal comes up (setSustain(false) → _release).
    */
   _holdWhileSustained(note) {
     const voice = this.voices.get(note);
@@ -267,10 +288,13 @@ export class PianoSynth {
 
     const now = this.ctx.currentTime;
     const gain = voice.envelope.gain;
-    const current = Math.max(0.0001, gain.value);
+    const current = Math.max(0.0002, voice.holdLevel ?? 0.0002);
+
     gain.cancelScheduledValues(now);
     gain.setValueAtTime(current, now);
-    gain.exponentialRampToValueAtTime(0.0002, now + 16);
+    // Gentle acoustic-style fade while dampers are up — still clearly audible
+    // for well over the length of a typical phrase.
+    gain.exponentialRampToValueAtTime(0.0001, now + this._pedalDecayTime());
   }
 
   noteOn(note, velocity = 100) {
@@ -295,6 +319,7 @@ export class PianoSynth {
       oscillators: built.oscillators,
       envelope,
       extras: built.extras ?? [],
+      holdLevel: built.holdLevel ?? 0.0002,
     });
   }
 
@@ -328,7 +353,7 @@ export class PianoSynth {
     );
 
     const peak = 0.28 * level;
-    scheduleAmp(envelope, now, peak, 0.006, 0.85, 0.32, 16);
+    const holdLevel = scheduleAmp(envelope, now, peak, 0.006, 0.85, 0.42);
 
     const oscillators = connectPartials(
       ctx,
@@ -342,7 +367,7 @@ export class PianoSynth {
       filter
     );
     filter.connect(envelope);
-    return { oscillators, extras: [filter] };
+    return { oscillators, extras: [filter], holdLevel };
   }
 
   _buildSteinway(ctx, frequency, level, now, envelope) {
@@ -356,7 +381,7 @@ export class PianoSynth {
     );
 
     const peak = 0.3 * level;
-    scheduleAmp(envelope, now, peak, 0.01, 1.1, 0.38, 20);
+    const holdLevel = scheduleAmp(envelope, now, peak, 0.01, 1.1, 0.48);
 
     const oscillators = connectPartials(
       ctx,
@@ -373,7 +398,7 @@ export class PianoSynth {
       filter
     );
     filter.connect(envelope);
-    return { oscillators, extras: [filter] };
+    return { oscillators, extras: [filter], holdLevel };
   }
 
   _buildCinematic(ctx, frequency, level, now, envelope) {
@@ -392,7 +417,7 @@ export class PianoSynth {
     );
 
     const peak = 0.26 * level;
-    scheduleAmp(envelope, now, peak, 0.002, 0.12, 0.08, 0.5);
+    const holdLevel = scheduleAmp(envelope, now, peak, 0.002, 0.12, 0.12);
 
     const oscillators = connectPartials(
       ctx,
@@ -407,7 +432,7 @@ export class PianoSynth {
       filter
     );
     filter.connect(envelope);
-    return { oscillators, extras: [filter] };
+    return { oscillators, extras: [filter], holdLevel };
   }
 
   _buildEPiano(ctx, frequency, level, now, envelope) {
@@ -441,12 +466,13 @@ export class PianoSynth {
     tone.connect(tremolo);
 
     const peak = 0.32 * level;
-    scheduleAmp(envelope, now, peak, 0.004, 0.55, 0.28, 12);
+    const holdLevel = scheduleAmp(envelope, now, peak, 0.004, 0.55, 0.35);
     tremolo.connect(envelope);
 
     return {
       oscillators: [carrier, modulator, bell, lfo],
       extras: [modGain, bellGain, tone, tremolo, lfoGain],
+      holdLevel,
     };
   }
 
@@ -478,10 +504,10 @@ export class PianoSynth {
     drive.connect(filter);
 
     const peak = 0.22 * level;
-    scheduleAmp(envelope, now, peak, 0.008, 0.35, 0.5, 8);
+    const holdLevel = scheduleAmp(envelope, now, peak, 0.008, 0.35, 0.55);
     filter.connect(envelope);
 
-    return { oscillators, extras: [drive, filter] };
+    return { oscillators, extras: [drive, filter], holdLevel };
   }
 
   _buildEighties(ctx, frequency, level, now, envelope) {
@@ -499,7 +525,7 @@ export class PianoSynth {
     );
 
     // Supersaw: stacked detuned saws do the chorus work without modulating
-    // DelayNode.delayTime (another Offline-render footgun).
+    // DelayNode.delayTime (another offline-render footgun).
     const detunes = [-17, -9, -4, 0, 4, 9, 17];
     const oscillators = [];
     for (const detune of detunes) {
@@ -512,10 +538,10 @@ export class PianoSynth {
     }
 
     const peak = 0.24 * level;
-    scheduleAmp(envelope, now, peak, 0.04, 0.45, 0.6, 14);
+    const holdLevel = scheduleAmp(envelope, now, peak, 0.04, 0.45, 0.65);
     filter.connect(envelope);
 
-    return { oscillators, extras: [filter] };
+    return { oscillators, extras: [filter], holdLevel };
   }
 
   noteOff(note) {
@@ -529,12 +555,14 @@ export class PianoSynth {
 
   _release(note, releaseTime) {
     const voice = this.voices.get(note);
-    if (!voice) return;
+    if (!voice || !this.ctx) return;
     this.voices.delete(note);
+    this.pendingRelease.delete(note);
 
     const now = this.ctx.currentTime;
     const gain = voice.envelope.gain;
-    const current = Math.max(0.0001, gain.value);
+    // Prefer the known hold level — AudioParam.value can be wrong mid-automation.
+    const current = Math.max(0.0001, voice.holdLevel ?? gain.value ?? 0.0001);
 
     gain.cancelScheduledValues(now);
     gain.setValueAtTime(current, now);

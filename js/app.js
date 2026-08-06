@@ -89,6 +89,7 @@ const ui = {
   btnReset: $("btnReset"),
   eventMeta: $("eventMeta"),
   footerSource: $("footerSource"),
+  footerPedal: $("footerPedal"),
   nowPlaying: $("nowPlaying"),
   octaveValue: $("octaveValue"),
   btnOctaveDown: $("btnOctaveDown"),
@@ -278,7 +279,8 @@ function handleNoteOn(note, velocity = 100) {
 }
 
 function handleNoteOff(note) {
-  piano.setActive(note, false);
+  // Keep the key lit while the damper pedal is holding the note.
+  if (!synth.sustain) piano.setActive(note, false);
   synth.noteOff(note);
   if (piano.activeNotes.size === 0) ui.nowPlaying.textContent = "—";
   processMessage([0x80, note, 0]);
@@ -317,10 +319,11 @@ function handleDeviceMessage(event) {
     if (!synth.sustain) piano.setActive(note, false);
     synth.noteOff(note);
     if (piano.activeNotes.size === 0) ui.nowPlaying.textContent = "—";
-  } else if (status === 0xb0 && data.length >= 3 && note === 64) {
-    // CC64 damper / sustain pedal (half-pedal values treated as on at ≥ 64).
+  } else if (status === 0xb0 && data.length >= 3 && data[1] === 64) {
+    // CC64 damper / sustain pedal (MIDI on at ≥ 64; treat any >0 as down so
+    // continuous/half pedals still engage before the midpoint).
     unlockAudio();
-    const down = data[2] >= 64;
+    const down = data[2] > 0;
     const released = synth.setSustain(down);
     for (const releasedNote of released) {
       piano.setActive(releasedNote, false);
@@ -328,9 +331,15 @@ function handleDeviceMessage(event) {
     if (!down && piano.activeNotes.size === 0) {
       ui.nowPlaying.textContent = "—";
     }
+    updatePedalStatus(down);
   }
 
   processMessage(data, event.timeStamp);
+}
+
+function updatePedalStatus(down) {
+  if (!ui.footerPedal) return;
+  ui.footerPedal.hidden = !down;
 }
 
 function flashCounter() {
