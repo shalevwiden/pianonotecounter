@@ -293,6 +293,19 @@ body {
     }
   }
 
+  &__nav {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem 0.35rem;
+    justify-self: center;
+    flex-wrap: wrap;
+    justify-content: center;
+
+    .footer__home {
+      justify-self: auto;
+    }
+  }
+
   &__status {
     display: flex;
     flex-wrap: wrap;
@@ -416,7 +429,8 @@ body {
       justify-content: center;
     }
 
-    &__home {
+    &__home,
+    &__nav {
       justify-self: center;
       order: -1;
     }

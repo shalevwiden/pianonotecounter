@@ -1,14 +1,19 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en" data-theme="dark">
   <head>
     <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-24448W7H6J"></script>
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=G-24448W7H6J"
+    ></script>
     <script>
       window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
 
-      gtag('config', 'G-24448W7H6J');
+      gtag("config", "G-24448W7H6J");
     </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -30,9 +35,7 @@
   <body class="landing">
     <div class="landing__noise" aria-hidden="true"></div>
 
-    <div class="landing-banner" role="note">
-      Built by pianists for pianists
-    </div>
+    <div class="landing-banner" role="note">Built by pianists for pianists</div>
 
     <header class="landing-nav">
       <a class="landing-nav__brand" href="#top">
@@ -54,7 +57,8 @@
       <nav class="landing-nav__links" aria-label="Page">
         <a href="#craft">Craft</a>
         <a href="#play">Play</a>
-        <a href="#studio">Studio</a>
+        <a href="#features">Features</a>
+        <a href="blog/">Blog</a>
       </nav>
       <a class="landing-nav__cta" href="app.html">Open app</a>
       <button
@@ -116,14 +120,51 @@
             <em>counted.</em>
           </h1>
           <p class="landing-hero__lead hero-rise" style="--rise-delay: 0.34s">
-            A quiet studio for the browser — built for pianists who practice with
-            intention and leave with a take worth keeping.
+            A quiet studio for the browser — built for pianists who practice
+            with intention and leave with a take worth keeping.
           </p>
-          <div class="landing-hero__actions hero-rise" style="--rise-delay: 0.48s">
+          <div
+            class="landing-hero__actions hero-rise"
+            style="--rise-delay: 0.48s"
+          >
             <a class="landing-btn landing-btn--primary" href="app.html">
               Enter the studio
             </a>
+            <a class="landing-btn landing-btn--ghost" href="#in-action">
+              See Peak Notes in Action
+            </a>
           </div>
+        </div>
+      </section>
+
+      <section class="landing-demo" id="in-action">
+        <div class="landing-demo__inner reveal reveal--up">
+          <p class="landing-demo__eyebrow">Watch</p>
+          <h2 class="landing-demo__title">Peak Notes <em>in action</em></h2>
+          <div class="landing-demo__frame">
+            <div class="landing-demo__embed">
+              <!-- Replace VIDEO_ID with your YouTube video id -->
+              <iframe
+                src="https://www.youtube.com/embed/7wV8HjpL2dg?si=UUC8evA48a6xmAua"
+                title="Peak Notes in action"
+                allow="
+                  accelerometer;
+                  autoplay;
+                  clipboard-write;
+                  encrypted-media;
+                  gyroscope;
+                  picture-in-picture;
+                  web-share;
+                "
+                referrerpolicy="strict-origin-when-cross-origin"
+                allowfullscreen
+              ></iframe>
+            </div>
+          </div>
+          <p class="landing-demo__copy">
+            A quick look at counting notes, capturing a take, and exporting from
+            the studio — the same flow you’ll use at the bench.
+          </p>
         </div>
       </section>
 
@@ -160,10 +201,10 @@
             <em>not toy controllers.</em>
           </h2>
           <p class="landing-copy">
-            Plug in a digital piano — Yamaha and friends welcome — and Peak Notes
-            listens over Web MIDI. Sustain pedal holds the room. Velocity keeps
-            the touch. Your computer keyboard waits politely until you invite it
-            in.
+            Plug in a digital piano — Yamaha and friends welcome — and Peak
+            Notes listens over Web MIDI. Sustain pedal holds the room. Velocity
+            keeps the touch. Your computer keyboard waits politely until you
+            invite it in.
           </p>
           <ul class="landing-list">
             <li>USB MIDI with automatic device preference</li>
@@ -202,9 +243,9 @@
         </div>
       </section>
 
-      <section class="landing-section landing-section--studio" id="studio">
+      <section class="landing-section landing-section--features" id="features">
         <div class="landing-section__inner reveal reveal--up">
-          <p class="landing-eyebrow">The studio</p>
+          <p class="landing-eyebrow">Features</p>
           <h2 class="landing-heading">
             Leave with more<br />
             <em>than a memory.</em>
@@ -212,7 +253,10 @@
         </div>
 
         <div class="landing-features">
-          <article class="landing-feature reveal reveal--up" style="--reveal-delay: 0s">
+          <article
+            class="landing-feature reveal reveal--up"
+            style="--reveal-delay: 0s"
+          >
             <div class="landing-feature__num">01</div>
             <h3 class="landing-feature__title">Live counting</h3>
             <p>
@@ -221,16 +265,22 @@
               — then open Focus for a counter that fills the screen.
             </p>
           </article>
-          <article class="landing-feature reveal reveal--up" style="--reveal-delay: 0.08s">
+          <article
+            class="landing-feature reveal reveal--up"
+            style="--reveal-delay: 0.08s"
+          >
             <div class="landing-feature__num">02</div>
             <h3 class="landing-feature__title">Standard MIDI</h3>
             <p>
               Export SMF Format&nbsp;1 at 480&nbsp;PPQN — the kind of file
-              Synthesia, DAWs, and notation tools expect. Leading silence trimmed.
-              Held notes closed cleanly. Your take, portable.
+              Synthesia, DAWs, and notation tools expect. Leading silence
+              trimmed. Held notes closed cleanly. Your take, portable.
             </p>
           </article>
-          <article class="landing-feature reveal reveal--up" style="--reveal-delay: 0.16s">
+          <article
+            class="landing-feature reveal reveal--up"
+            style="--reveal-delay: 0.16s"
+          >
             <div class="landing-feature__num">03</div>
             <h3 class="landing-feature__title">Silent counter film</h3>
             <p>
@@ -239,7 +289,10 @@
               reels, lessons, and proof of practice.
             </p>
           </article>
-          <article class="landing-feature reveal reveal--up" style="--reveal-delay: 0.24s">
+          <article
+            class="landing-feature reveal reveal--up"
+            style="--reveal-delay: 0.24s"
+          >
             <div class="landing-feature__num">04</div>
             <h3 class="landing-feature__title">History on device</h3>
             <p>
@@ -280,7 +333,10 @@
             Chrome or Edge for MIDI. Any modern browser for the keyboard.
             Headphones recommended. Ambition optional — but welcome.
           </p>
-          <a class="landing-btn landing-btn--primary landing-btn--lg" href="app.html">
+          <a
+            class="landing-btn landing-btn--primary landing-btn--lg"
+            href="app.html"
+          >
             Open Peak Notes
           </a>
         </div>
@@ -345,12 +401,15 @@
             </div>
           </div>
 
-          <a class="landing-footer__link" href="app.html">Studio →</a>
+          <div class="landing-footer__links">
+            <a class="landing-footer__link" href="blog/">Blog</a>
+            <a class="landing-footer__link" href="app.html">Studio →</a>
+          </div>
         </div>
 
         <p class="landing-footer__copy">
-          © <span id="year"></span> Peak Notes. Crafted for pianists who keep score.
-          All practice data stays on your device.
+          © <span id="year"></span> Peak Notes. Crafted for pianists who keep
+          score. All practice data stays on your device.
         </p>
       </div>
     </footer>
