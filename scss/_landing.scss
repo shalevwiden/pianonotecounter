@@ -344,6 +344,26 @@ html[data-theme="light"] .landing-theme {
     }
   }
 
+  // YouTube-themed demo CTA (dark mode)
+  &--demo {
+    border: 1.5px solid #ff4d4d;
+    color: #ffd6d6;
+    background: rgba(255, 77, 77, 0.08);
+
+    &:hover {
+      border-color: #ff6b6b;
+      color: #fff;
+      background: rgba(255, 77, 77, 0.18);
+    }
+
+    &:active {
+      border-color: #e03535;
+      color: #ffe8e8;
+      background: rgba(224, 53, 53, 0.28);
+      transform: translateY(0);
+    }
+  }
+
   &--lg {
     padding: 1rem 1.85rem;
     font-size: 0.98rem;
@@ -476,7 +496,7 @@ html[data-theme="light"] .landing-theme {
 
   em {
     font-style: italic;
-    color: var(--ink-muted);
+    color: var(--blue);
   }
 
   &--sm {
@@ -1037,32 +1057,40 @@ html[data-theme="light"] .landing {
   color-scheme: light;
 }
 
-html[data-theme="light"] .landing-nav.is-scrolled {
+html[data-theme="light"] .landing-nav {
   background: rgba(236, 239, 243, 0.92);
-}
+  border-bottom: 1px solid var(--line);
+  backdrop-filter: blur(14px);
 
-html[data-theme="light"] .landing-nav:not(.is-scrolled) {
   .landing-nav__name,
   .landing-nav__links a,
   .landing-theme {
-    color: rgba(244, 241, 234, 0.88);
+    color: var(--ink);
+  }
+
+  .landing-nav__links a {
+    color: var(--ink-muted);
   }
 
   .landing-nav__links a:hover,
   .landing-theme:hover {
-    color: #fff;
+    color: var(--blue-deep);
   }
 
   .landing-nav__cta {
-    color: #f4f1ea;
-    border-color: rgba(244, 241, 234, 0.3);
-    background: rgba(255, 255, 255, 0.08);
+    color: var(--ink);
+    border-color: var(--line);
+    background: transparent;
 
     &:hover {
-      background: rgba(255, 255, 255, 0.14);
-      border-color: rgba(244, 241, 234, 0.45);
+      background: color-mix(in srgb, var(--ink) 4%, transparent);
+      border-color: color-mix(in srgb, var(--ink) 18%, transparent);
     }
   }
+}
+
+html[data-theme="light"] .landing-nav.is-scrolled {
+  background: rgba(236, 239, 243, 0.96);
 }
 
 html[data-theme="light"] .landing-nav__mark {
@@ -1110,6 +1138,25 @@ html[data-theme="light"] .landing-btn--ghost {
   &:hover {
     background: rgba(255, 255, 255, 0.16);
     border-color: rgba(244, 241, 234, 0.42);
+  }
+}
+
+html[data-theme="light"] .landing-btn--demo {
+  border-color: #c62828;
+  color: #fff5f5;
+  background: rgba(198, 40, 40, 0.22);
+
+  &:hover {
+    border-color: #b71c1c;
+    color: #fff;
+    background: rgba(183, 28, 28, 0.38);
+  }
+
+  &:active {
+    border-color: #8e0000;
+    color: #ffeaea;
+    background: rgba(142, 0, 0, 0.48);
+    transform: translateY(0);
   }
 }
 
