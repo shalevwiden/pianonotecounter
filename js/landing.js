@@ -250,8 +250,7 @@ function initTheme() {
   if (saved === "light" || saved === "dark") {
     setLandingTheme(saved);
   } else {
-    const prefersLight = window.matchMedia("(prefers-color-scheme: light)").matches;
-    setLandingTheme(prefersLight ? "light" : "dark");
+    setLandingTheme("light");
   }
 
   const toggle = document.getElementById("landingThemeToggle");

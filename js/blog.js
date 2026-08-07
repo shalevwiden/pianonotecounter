@@ -25,8 +25,7 @@ function initTheme() {
   if (saved === "light" || saved === "dark") {
     setTheme(saved);
   } else {
-    const prefersLight = window.matchMedia("(prefers-color-scheme: light)").matches;
-    setTheme(prefersLight ? "light" : "dark");
+    setTheme("light");
   }
 
   document.getElementById("landingThemeToggle")?.addEventListener("click", () => {

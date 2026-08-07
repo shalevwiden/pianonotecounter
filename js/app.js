@@ -808,8 +808,7 @@ function initTheme() {
     setTheme(saved);
     return;
   }
-  const prefersLight = window.matchMedia("(prefers-color-scheme: light)").matches;
-  setTheme(prefersLight ? "light" : "dark");
+  setTheme("light");
 }
 
 function setView(view) {
